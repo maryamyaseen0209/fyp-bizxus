@@ -1,0 +1,157 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+
+import { getBusinessMe, refreshBusinessAuth } from "../services/authApi.js";
+
+const AuthContext = createContext(null);
+const accessKey = "bizxus_business_access_token";
+const refreshKey = "bizxus_business_refresh_token";
+const userKey = "bizxus_business_user";
+const PASSWORD_RESET_REQUIRED = "password_reset_required";
+
+function readBusinessSessionValue(key) {
+  const sessionValue = sessionStorage.getItem(key);
+  if (sessionValue) {
+    return sessionValue;
+  }
+
+  const legacyValue = localStorage.getItem(key);
+  if (legacyValue) {
+    sessionStorage.setItem(key, legacyValue);
+    localStorage.removeItem(key);
+    return legacyValue;
+  }
+
+  return null;
+}
+
+export function AuthProvider({ children }) {
+  const [user, setUserState] = useState(() => {
+    const saved = readBusinessSessionValue(userKey);
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      sessionStorage.removeItem(userKey);
+      localStorage.removeItem(userKey);
+      return null;
+    }
+  });
+  const [token, setTokenState] = useState(() => readBusinessSessionValue(accessKey));
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  // Lets refreshSession read the latest user without taking it as a dependency.
+  const userRef = useRef(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const setSession = useCallback((session) => {
+    sessionStorage.setItem(accessKey, session.accessToken);
+    sessionStorage.setItem(refreshKey, session.refreshToken);
+    sessionStorage.setItem(userKey, JSON.stringify(session.user));
+    localStorage.removeItem(accessKey);
+    localStorage.removeItem(refreshKey);
+    localStorage.removeItem(userKey);
+    setTokenState(session.accessToken);
+    setUserState(session.user);
+  }, []);
+
+  const clearSession = useCallback(() => {
+    sessionStorage.removeItem(accessKey);
+    sessionStorage.removeItem(refreshKey);
+    sessionStorage.removeItem(userKey);
+    localStorage.removeItem(accessKey);
+    localStorage.removeItem(refreshKey);
+    localStorage.removeItem(userKey);
+    setTokenState(null);
+    setUserState(null);
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    const currentToken = readBusinessSessionValue(accessKey);
+    const storedRefreshToken = readBusinessSessionValue(refreshKey);
+
+    if (!currentToken) {
+      clearSession();
+      setIsAuthReady(true);
+      return null;
+    }
+
+    try {
+      const currentUser = await getBusinessMe();
+      sessionStorage.setItem(userKey, JSON.stringify(currentUser));
+      setTokenState(currentToken);
+      setUserState(currentUser);
+      setIsAuthReady(true);
+      return currentUser;
+    } catch (error) {
+      if (error.response?.status === 403 && error.response?.data?.detail === PASSWORD_RESET_REQUIRED) {
+        const saved = readBusinessSessionValue(userKey);
+        let blockedUser = userRef.current;
+        if (saved) {
+          try {
+            blockedUser = { ...JSON.parse(saved), mustResetPassword: true };
+            sessionStorage.setItem(userKey, JSON.stringify(blockedUser));
+          } catch {
+            blockedUser = userRef.current ? { ...userRef.current, mustResetPassword: true } : null;
+          }
+        }
+        setTokenState(currentToken);
+        setUserState(blockedUser);
+        setIsAuthReady(true);
+        return blockedUser;
+      }
+
+      if (error.response?.status === 401 && storedRefreshToken) {
+        try {
+          const session = await refreshBusinessAuth(storedRefreshToken);
+          setSession(session);
+          setIsAuthReady(true);
+          return session.user;
+        } catch {
+          clearSession();
+        }
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        clearSession();
+      } else {
+        // A network blip, timeout or 5xx is not proof the session ended. Clearing it
+        // here logged the user out mid-typing during the background refresh, which read
+        // as the page reloading by itself. Keep the session and let the next poll retry.
+        setIsAuthReady(true);
+        return userRef.current;
+      }
+      setIsAuthReady(true);
+      return null;
+    }
+  }, [clearSession, setSession]);
+
+  useEffect(() => {
+    refreshSession().catch(() => {
+      clearSession();
+      setIsAuthReady(true);
+    });
+  }, [clearSession, refreshSession]);
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isAuthReady,
+      isAuthenticated: Boolean(token),
+      isPlatformAdmin: user?.globalRole === "platform_admin",
+      // Cashiers sign in through the same business form, so every consumer of this
+      // context needs to be able to tell the two workspaces apart.
+      isCashier: user?.accountType === "cashier",
+      setSession,
+      clearSession,
+      refreshSession,
+    }),
+    [user, token, isAuthReady, setSession, clearSession, refreshSession],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}

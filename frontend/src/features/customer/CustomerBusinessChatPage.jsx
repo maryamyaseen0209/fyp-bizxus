@@ -1,0 +1,266 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { Bot, CheckCircle2, MessageCircle, ShoppingCart } from "lucide-react";
+
+import { BusinessAiChatExperience, BusinessAiDraftOrderSummary } from "../../components/chat/BusinessAiChatExperience.jsx";
+import { BusinessAiBasketPanel } from "../../components/chat/BusinessAiBasketPanel.jsx";
+import { confirmCustomerDraftTransaction, getCustomerChatState, sendCustomerChatMessage } from "../../services/customerPortalApi.js";
+import { formatTransactionSuccess } from "../../utils/transaction.js";
+import { getApiErrorMessage } from "../../services/apiError.js";
+
+const emptyReply = { tenant: null, conversation: null, messages: [], draftOrder: {}, basket: {}, checkoutReadiness: {} };
+
+export function CustomerBusinessChatPage() {
+  const { tenantSlug } = useParams();
+  const { setCustomerSidebarPanel } = useOutletContext() || {};
+  const navigate = useNavigate();
+  const [chatState, setChatState] = useState(emptyReply);
+  const [messageText, setMessageText] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [draftQuantities, setDraftQuantities] = useState({});
+  const [fulfillmentDraft, setFulfillmentDraft] = useState({ type: "", addressLine1: "", city: "" });
+
+  useEffect(() => {
+    async function loadChat() {
+      setError("");
+      try {
+        const data = await getCustomerChatState(tenantSlug);
+        setChatState(data);
+      } catch (requestError) {
+        setError(getApiErrorMessage(requestError, "Unable to load customer chat. Please refresh and try again."));
+      }
+    }
+
+    loadChat();
+  }, [tenantSlug]);
+
+  async function submitMessage(event) {
+    event.preventDefault();
+    if (!messageText.trim()) return;
+    setIsSending(true);
+    setError("");
+    setNotice("");
+    try {
+      const data = await sendCustomerChatMessage(tenantSlug, { messageText: messageText.trim() });
+      setChatState(data);
+      setDraftQuantities({});
+      setFulfillmentDraft({
+        type: data.draftOrder?.fulfillmentPreference?.type === "delivery" ? "delivery" : "pickup",
+        paymentMethod: data.tenant?.paymentOptions?.defaultMethod || "",
+        addressLine1: "",
+        city: "",
+      });
+      setMessageText("");
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Something went wrong while asking the assistant. Please try again."));
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function confirmDraft() {
+    if (!chatState.draftOrder?.items?.length) return;
+    setIsConfirming(true);
+    setError("");
+    setNotice("");
+    try {
+      const fulfillmentType = fulfillmentDraft.type || (chatState.draftOrder.fulfillmentPreference?.type === "delivery" ? "delivery" : "pickup");
+      if (fulfillmentType === "delivery" && !fulfillmentDraft.addressLine1.trim()) {
+        setError("Unable to confirm order because delivery address is missing.");
+        return;
+      }
+      if (fulfillmentType === "delivery" && !fulfillmentDraft.city.trim()) {
+        setError("Unable to confirm order because city is missing.");
+        return;
+      }
+      const order = await confirmCustomerDraftTransaction(tenantSlug, {
+        conversationId: chatState.conversation?.id,
+        transactionType: chatState.draftOrder.transactionType || "auto",
+        paymentMethod: fulfillmentDraft.paymentMethod || chatState.tenant?.paymentOptions?.defaultMethod || undefined,
+        items: chatState.draftOrder.items.map((item) => ({
+          itemId: item.itemId,
+          // Clamped like the cart page, for the same reason.
+          quantity: Math.max(1, Math.min(99, Math.floor(Number(draftQuantities[item.itemId] || item.quantity) || 1))),
+          selectedVariantIndex: item.selectedVariantIndex ?? null,
+          selectedVariantName: item.selectedVariantName || "",
+          selectedOptions: item.selectedOptions || {},
+          variantSku: item.variantSku || "",
+        })),
+        fulfillment: {
+          type: fulfillmentType,
+          address: fulfillmentType === "delivery" ? { line1: fulfillmentDraft.addressLine1, city: fulfillmentDraft.city } : {},
+        },
+        notes: "Confirmed from customer AI chat.",
+        customFields: {},
+      });
+      setNotice(`Your order has been confirmed. ${formatTransactionSuccess(order)}`);
+      navigate(`/customer/orders/${order.id}`);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Something went wrong while creating your order. Please try again."));
+    } finally {
+      setIsConfirming(false);
+    }
+  }
+
+  const business = chatState.tenant;
+
+  useEffect(() => {
+    if (!setCustomerSidebarPanel) return undefined;
+    if (!business) {
+      setCustomerSidebarPanel(null);
+      return undefined;
+    }
+
+    // One panel, not two. The basket is the live cart; the draft summary is the older
+    // "AI suggested this" flow. Stacking them put the same item on screen twice with two
+    // different totals. The draft only appears when it has something the basket does
+    // not, and never as an empty shell under an already-empty basket.
+    const hasBasketLines = Boolean((chatState.basket?.lines || []).length);
+    const hasDraftLines = Boolean((chatState.draftOrder?.items || []).length);
+
+    setCustomerSidebarPanel(
+      <div className="space-y-3">
+        <BusinessAiBasketPanel
+          basket={chatState.basket || {}}
+          compact
+          readiness={chatState.checkoutReadiness || {}}
+        />
+        {!hasBasketLines && hasDraftLines ? (
+          <BusinessAiDraftOrderSummary
+            business={business}
+            compact
+            draftOrder={chatState.draftOrder || {}}
+            draftQuantities={draftQuantities}
+            fulfillmentDraft={fulfillmentDraft}
+            isConfirming={isConfirming}
+            onConfirmDraft={confirmDraft}
+            setDraftQuantities={setDraftQuantities}
+            setFulfillmentDraft={setFulfillmentDraft}
+            setMessageText={setMessageText}
+          />
+        ) : null}
+      </div>
+    );
+
+    return () => setCustomerSidebarPanel(null);
+  }, [
+    business,
+    chatState.basket,
+    chatState.checkoutReadiness,
+    chatState.draftOrder,
+    draftQuantities,
+    fulfillmentDraft,
+    isConfirming,
+    setCustomerSidebarPanel,
+  ]);
+
+  if (error && !business) {
+    return (
+      <section className="rounded-2xl border border-dashed border-line bg-surface p-8 text-center">
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink">AI chat unavailable</h1>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">{error}</p>
+        <button className="ui-btn-primary mt-5" type="button" onClick={() => window.location.reload()}>
+          Try again
+        </button>
+      </section>
+    );
+  }
+
+  // The chat component below is a tall panel; a bare "Loading AI chat..." line meant the whole
+  // page jumped once the response landed.
+  if (!business) {
+    return (
+      <section className="space-y-6" aria-busy="true">
+        <div className="flex flex-col gap-6 rounded-3xl border border-line bg-white p-6 shadow-card sm:flex-row sm:items-center">
+          <div className="skeleton-shimmer h-16 w-16 rounded-2xl" />
+          <div className="flex-1 space-y-3">
+            <div className="skeleton-shimmer h-3 w-24 rounded" />
+            <div className="skeleton-shimmer h-7 w-64 rounded" />
+            <div className="skeleton-shimmer h-3 w-full max-w-xl rounded" />
+          </div>
+        </div>
+        <div className="skeleton-shimmer h-24 w-full rounded-2xl" />
+        <div className="skeleton-shimmer h-80 w-full rounded-2xl" />
+        <p className="sr-only" role="status">Loading the assistant…</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-5">
+      <div className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand">
+              <Bot size={24} strokeWidth={1.8} />
+            </span>
+
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted">AI assistant</p>
+              <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-ink">
+                Ask {business.name}
+              </h1>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
+                Ask about prices, availability, sizes, colors, delivery, or just say what you want
+                to order. The assistant will prepare a draft for you to confirm.
+              </p>
+            </div>
+          </div>
+
+          {/* The reassurance that matters most on an AI page that ends in "confirm order". */}
+          <div className="flex shrink-0 items-center gap-2.5 rounded-xl border border-approve-200 bg-approve-50 px-3.5 py-2.5 text-sm font-semibold text-approve-800">
+            <CheckCircle2 size={16} className="shrink-0" />
+            <span>Always asked before an order is placed</span>
+          </div>
+        </div>
+
+        {/* Was three static tiles reading "Ask a question / Review AI suggestion / Confirm
+            order". They restated the page and never advanced. Now they carry what the assistant
+            can actually do, which is what a first-time visitor needs to know. */}
+        <ol className="mt-6 grid gap-3 border-t border-line-soft pt-5 sm:grid-cols-3">
+          {[
+            { icon: MessageCircle, title: "Ask anything", body: "Prices, sizes, colours, what's in stock today." },
+            { icon: Bot, title: "Get a draft", body: "The assistant builds the order, you see every line." },
+            { icon: ShoppingCart, title: "You confirm", body: "Nothing is ordered or charged until you say so." },
+          ].map((step) => {
+            const Icon = step.icon;
+            return (
+              <li key={step.title} className="flex items-start gap-3">
+                <Icon size={16} className="mt-0.5 shrink-0 text-brand" strokeWidth={1.9} />
+                <div>
+                  <h2 className="text-sm font-bold text-ink">{step.title}</h2>
+                  <p className="mt-0.5 text-xs leading-5 text-muted">{step.body}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      <BusinessAiChatExperience
+        accentClass="text-brand"
+        backLabel={`Back to ${business.name}`}
+        backLink={`/customer/businesses/${tenantSlug}`}
+        business={business}
+        draftOrder={chatState.draftOrder || {}}
+        draftQuantities={draftQuantities}
+        error={error}
+        fulfillmentDraft={fulfillmentDraft}
+        isConfirming={isConfirming}
+        isSending={isSending}
+        messageText={messageText}
+        messages={chatState.messages || []}
+        notice={notice}
+        onConfirmDraft={confirmDraft}
+        onSubmitMessage={submitMessage}
+        draftPlacement="external"
+        setDraftQuantities={setDraftQuantities}
+        setFulfillmentDraft={setFulfillmentDraft}
+        setMessageText={setMessageText}
+      />
+    </section>
+  );
+}

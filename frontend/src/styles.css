@@ -1,0 +1,1027 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family:
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+
+  /* Main Brand */
+  --primary: #2563eb;
+  --primary-bright: #38bdf8;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --primary-soft: #dbeafe;
+
+  /* Sidebar */
+  --sidebar-top: #102a43;
+  --sidebar-bottom: #081827;
+  --sidebar-card: #173954;
+  --sidebar-active-start: #1d4ed8;
+  --sidebar-active-end: #38bdf8;
+  --sidebar-text: #dce9f5;
+  --sidebar-muted: #9cb4ca;
+
+  /* Main Dashboard */
+  --page-bg: #f8faff;
+  --surface: #ffffff;
+  --surface-soft: #f8f9fd;
+  --surface-purple: #f0f7ff;
+
+  /* Typography */
+  --text-primary: #101633;
+  --text-secondary: #52638d;
+  --text-muted: #8490ae;
+  --text-white: #ffffff;
+
+  /* Borders */
+  --border: #e5e9f3;
+  --border-soft: #eef1f7;
+
+  /* AI accents */
+  --purple: #2563eb;
+  --purple-light: #eee7ff;
+  --purple-glow: #38bdf8;
+
+  /* Blue */
+  --blue: #2563eb;
+  --blue-light: #eaf3ff;
+
+  /* Success/info aliases use the blue system to keep the app visually unified. */
+  --green: #2563eb;
+  --green-dark: #1d4ed8;
+  --green-light: #eff6ff;
+
+  /* Orange / Warning */
+  --orange: #ff9800;
+  --orange-light: #fff3df;
+
+  /* Red */
+  --danger: #ef4444;
+  --danger-light: #feecec;
+
+  color: var(--text-primary);
+  background: var(--page-bg);
+}
+
+html {
+  min-height: 100%;
+  /* Flat, clean page background — no gradient wash, per the scheme. */
+  background: var(--page-bg);
+  scroll-behavior: smooth;
+}
+
+/* No page should ever pan sideways on a phone: one stray wide child is enough to turn the
+   whole app into a horizontal scroll, which reads as broken rather than as a wide layout.
+
+   `clip` rather than `hidden` is load-bearing. `overflow: hidden` would turn the root into
+   a scroll container, which silently breaks every `position: sticky` in the app — the
+   dashboard header, the sidebar rail, and the marketing nav all stop sticking. `clip`
+   contains the overflow without establishing a scrollport, so sticky keeps working.
+
+   Elements that genuinely need to scroll sideways (wide data tables, the workflow strip,
+   the mobile drawer) set `overflow-x: auto` on themselves and are unaffected, because an
+   element with its own scroll container clips independently of the root. */
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* ---------------------------------------------------------------- forms -- */
+
+.auth-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0.75rem 0;
+  color: var(--text-primary);
+  outline: none;
+  background: transparent;
+}
+
+.auth-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.7rem 0.95rem;
+  color: var(--text-primary);
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:focus {
+  border-color: var(--primary-bright);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+/* --------------------------------------------------------------- auth -- */
+
+/* One flat wash. This shell used to stack a base gradient plus an 18s-animated four-way
+   ambient layer plus a grid, and the drifting ambient behind a short login form pulled
+   attention off the one thing the user came to do. Flat plus a faint grid is enough. */
+.auth-shell {
+  background: linear-gradient(150deg, #eef4ff 0%, #f7faff 52%, #ffffff 100%);
+}
+
+.auth-grid {
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse 80% 62% at 50% 38%, #000 42%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 62% at 50% 38%, #000 42%, transparent 100%);
+}
+
+/* The story panel reuses the landing hero's photographic treatment so the journey from the
+   marketing page into login feels like one product rather than two. `photoLight` is the
+   mobile variant: same image, lighter scrim, because mobile shows it as a short banner
+   above the form where a heavy navy wash would just look like a dark bar. */
+.auth-story-photo {
+  position: absolute;
+  inset: 0;
+  background-image:
+    /* Three cooperating layers instead of one blanket wash. A flat 0.84 scrim hid the
+       photograph so completely that the panel read as a flat navy block. The base gradient
+       only darkens where it must (top edge for the eyebrow, bottom for the footnote), and a
+       second horizontal gradient darkens the left half where the headline sits. Where the
+       copy ends, the photo is allowed to show through at roughly half strength. */
+    linear-gradient(180deg, rgba(7, 19, 41, 0.92) 0%, rgba(7, 19, 41, 0.62) 26%, rgba(7, 19, 41, 0.5) 55%, rgba(7, 19, 41, 0.88) 100%),
+    linear-gradient(100deg, rgba(7, 19, 41, 0.82) 0%, rgba(7, 19, 41, 0.5) 48%, rgba(7, 19, 41, 0.12) 100%),
+    radial-gradient(ellipse 70% 55% at 22% 22%, rgba(37, 99, 235, 0.34), transparent 70%),
+    var(--auth-photo);
+  background-size: cover;
+  background-position: center;
+  /* A touch of saturation so the source photos still feel like photographs once the scrim
+     has cooled them toward the brand's navy. */
+  filter: saturate(1.08) contrast(1.03);
+  animation: heroDrift 40s ease-in-out infinite alternate;
+}
+
+.auth-story-photo-light {
+  background-image:
+    linear-gradient(180deg, rgba(7, 19, 41, 0.7) 0%, rgba(7, 19, 41, 0.42) 100%),
+    linear-gradient(100deg, rgba(7, 19, 41, 0.55) 0%, rgba(7, 19, 41, 0.18) 100%),
+    radial-gradient(ellipse 75% 60% at 30% 20%, rgba(37, 99, 235, 0.26), transparent 70%),
+    var(--auth-photo);
+}
+
+.auth-field {
+  box-shadow: 0 1px 0 rgba(16, 22, 51, 0.02);
+}
+
+.auth-field:hover {
+  border-color: #bfdbfe;
+}
+
+.auth-field:focus-within {
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.08);
+}
+
+.auth-primary-btn {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.22);
+}
+
+/* -------------------------------------------------------- motion system -- */
+
+.calm-motion-field {
+  background:
+    linear-gradient(120deg, rgba(29, 78, 216, 0.92), rgba(37, 99, 235, 0.72), rgba(56, 189, 248, 0.38)),
+    linear-gradient(180deg, rgba(8, 24, 39, 0.2), rgba(8, 24, 39, 0.8));
+  background-size: 180% 180%;
+  animation: calmFieldDrift 18s ease-in-out infinite alternate;
+}
+
+.calm-motion-field::before,
+.calm-motion-field::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  background-image:
+    linear-gradient(115deg, transparent 0 26%, rgba(255, 255, 255, 0.11) 27% 28%, transparent 29% 100%),
+    linear-gradient(65deg, transparent 0 34%, rgba(255, 255, 255, 0.09) 35% 36%, transparent 37% 100%);
+  background-size: 190px 190px, 260px 260px;
+  opacity: 0.65;
+  animation: calmLines 28s linear infinite;
+}
+
+.calm-motion-field::after {
+  opacity: 0.34;
+  animation-direction: reverse;
+  animation-duration: 36s;
+}
+
+.kinetic-word {
+  display: inline-block;
+  animation: kineticWord 8s ease-in-out infinite;
+}
+
+.kinetic-word:nth-child(2) {
+  animation-delay: 0.35s;
+}
+
+.kinetic-word:nth-child(3) {
+  animation-delay: 0.7s;
+}
+
+.workflow-strip {
+  scrollbar-width: none;
+}
+
+.workflow-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.workflow-step {
+  position: relative;
+}
+
+.workflow-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  width: 1.25rem;
+  height: 1px;
+  background: var(--border);
+}
+
+@keyframes calmFieldDrift {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes calmLines {
+  from {
+    transform: translate3d(-2%, -2%, 0);
+  }
+  to {
+    transform: translate3d(2%, 2%, 0);
+  }
+}
+
+@keyframes kineticWord {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: translateY(0);
+  }
+  42% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.auth-primary-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.25) 42%, transparent 72%);
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+}
+
+.auth-primary-btn:hover::after {
+  transform: translateX(120%);
+}
+
+/* The auth panel and its ambient drift are the only auth motion left; the entrance
+   animations that used to live here went with the fake dashboard preview. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-story-photo {
+    animation: none;
+  }
+
+  .auth-primary-btn::after {
+    display: none;
+  }
+
+  .calm-motion-field,
+  .calm-motion-field::before,
+  .calm-motion-field::after,
+  .kinetic-word {
+    animation: none;
+  }
+}
+
+:where(a, button, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary-bright);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--primary-soft);
+  color: var(--text-primary);
+}
+
+/* ------------------------------------------------------- reusable parts -- */
+
+@layer components {
+  /* Dashboard card: near-pure white, 1px border, very subtle shadow. */
+  .ui-card {
+    @apply rounded-card border border-line bg-white shadow-card;
+  }
+
+  /* Primary call to action. */
+  .ui-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-cta px-4 py-2.5
+      text-sm font-semibold text-white shadow-nav-active transition
+      hover:brightness-110 disabled:opacity-60 disabled:hover:brightness-100;
+  }
+
+  .ui-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line
+      bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-surface;
+  }
+
+  /* Status pills. */
+  .ui-pill {
+    @apply inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+
+  .ui-pill-active {
+    @apply ui-pill bg-green-50 text-green-600;
+  }
+
+  .ui-pill-paused {
+    @apply ui-pill bg-orange-100 text-orange-600;
+  }
+
+  .ui-pill-new {
+    @apply ui-pill bg-purple-100 text-purple-600;
+  }
+
+  /* The dark AI assistant panel. */
+  .ui-ai-card {
+    @apply rounded-card bg-ai-card p-5 text-white shadow-lift;
+  }
+}
+
+/* Main CTAs carry the brand gradient. Scoped to buttons and links on purpose: `bg-brand`
+   is also used for non-interactive marks (status dots, chart bars), which stay flat. */
+button.bg-brand,
+button.bg-primary,
+a.bg-brand,
+a.bg-primary,
+.bg-cta {
+  background-image: linear-gradient(90deg, #1d4ed8, #2563eb);
+}
+
+button.bg-brand:hover,
+button.bg-primary:hover,
+a.bg-brand:hover,
+a.bg-primary:hover {
+  filter: brightness(1.08);
+}
+
+button.bg-brand:disabled,
+button.bg-primary:disabled {
+  filter: none;
+}
+
+/* The dark rail keeps its own scrollbar so it does not show a bright default track. */
+.rail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(216, 221, 242, 0.22) transparent;
+}
+
+.rail-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.rail-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgba(216, 221, 242, 0.22);
+}
+
+.rail-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------ receipts -- */
+
+/* What leaves the printer is the receipt alone: no rail, no header, no buttons.
+   The sheet is sized for 80mm thermal paper but falls back to A4 cleanly, so the same
+   markup serves a counter printer and an office one. */
+
+.print-hide {
+  /* No effect on screen; the print block below is what acts on it. */
+  display: revert;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 0;
+    background: #ffffff;
+  }
+
+  .print-hide {
+    display: none !important;
+  }
+
+  .receipt-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #000000;
+  }
+
+  /* Printers drop background fills by default, so paid/pending has to survive as text. */
+  .receipt-sheet * {
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .receipt-sheet table {
+    page-break-inside: avoid;
+  }
+}
+
+/* ---------------------------------------------------- premium modern AI SaaS -- */
+
+/* Futuristic subtle grid mask */
+.ai-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse 65% 50% at 50% 40%, #000 50%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 50% at 50% 40%, #000 50%, transparent 100%);
+}
+
+.ai-grid-light-bg {
+  background-image:
+    linear-gradient(to right, rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 40%, transparent 100%);
+}
+
+/* Sleek glass cards with subtle specular top highlight */
+.ai-glass-card {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+.ai-glass-card-light {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(229, 233, 243, 0.9);
+  box-shadow: 0 10px 30px -8px rgba(16, 22, 51, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Shimmer shine effect for primary buttons */
+.ai-btn-shimmer {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 20px -2px rgba(37, 99, 235, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-btn-shimmer::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 65%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.65s ease;
+}
+
+.ai-btn-shimmer:hover::after {
+  transform: translateX(100%);
+}
+
+.ai-btn-shimmer:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.6);
+}
+
+/* The ambient glow pulse, laser beam and floating-particle keyframes that used to sit here
+   have been removed along with their consumers. The landing hero now leans on its photograph
+   for depth, and the light sections on a single soft wash, so nothing in the page was still
+   referencing them. */
+
+/* ------------------------------------------------ cinematic landing hero -- */
+
+/* The photograph is deliberately blurred, which is what lets white type sit on top of it
+   without a legibility fight. The gradient stack does three jobs in one layer: a top scrim
+   so the sticky nav's edge stays readable, a mid scrim for headline contrast, and a bottom
+   fade into --page-bg so the hero dissolves into the next section instead of ending on a
+   hard seam. */
+.landing-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 19, 41, 0.82) 0%,
+      rgba(7, 19, 41, 0.62) 34%,
+      rgba(7, 19, 41, 0.58) 62%,
+      rgba(248, 250, 255, 0.94) 92%,
+      #f8faff 100%
+    ),
+    radial-gradient(ellipse 70% 55% at 50% 18%, rgba(37, 99, 235, 0.34), transparent 68%),
+    url("https://ik.imagekit.io/fac14ggkmb/business-blur-background-photo.jpeg");
+  background-size:
+    cover,
+    cover,
+    cover;
+  background-position:
+    center,
+    center,
+    center;
+  background-repeat: no-repeat;
+  /* The slow drift is what stops a still photo from reading as a flat wallpaper. */
+  animation: heroDrift 34s ease-in-out infinite alternate;
+}
+
+@keyframes heroDrift {
+  from {
+    background-position:
+      center 48%,
+      center 18%,
+      52% 50%;
+  }
+
+  to {
+    background-position:
+      center 54%,
+      center 26%,
+      48% 52%;
+  }
+}
+
+/* Reusable eyebrow pill. `onDark` inverts it for the hero; the default matches the
+   light sections so the two never drift apart stylistically. */
+.landing-eyebrow {
+  @apply inline-block rounded-full px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em];
+}
+
+.landing-eyebrow-light {
+  @apply bg-blue-50 text-brand;
+}
+
+.landing-eyebrow-dark {
+  @apply border border-white/20 bg-white/10 text-white backdrop-blur-md;
+}
+
+/* Left-edge light bar on section headings. A single consistent anchor reads as intentional
+   where the previous mix of centred pills and top gradient strips did not. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-bg {
+    animation: none;
+  }
+
+  .admin-hero-bg,
+  .admin-hero-bg-mono,
+  .admin-hero-bg-soft {
+    animation: none;
+    filter: none;
+  }
+
+  .admin-live-dot {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------ cinematic customer side -- */
+
+/* Placeholder for list-shaped pages and the marketplace grid. Sized to match a real card so
+   the page does not jump when the content arrives — a layout jump under the pointer is what
+   makes a loading state read as broken rather than as brief. */
+.skeleton-shimmer {
+  background: linear-gradient(100deg, #eef2f9 30%, #f8fafd 50%, #eef2f9 70%);
+  background-size: 220% 100%;
+  animation: skeletonSlide 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonSlide {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+  }
+}
+
+/* Slow drift for the shopper-facing artwork. Photographs and illustrations sit still otherwise,
+   which makes a hero read as a screenshot; a few millimetres of travel over many seconds reads
+   as alive without ever pulling focus off the copy. */
+.shop-float {
+  animation: shopFloat 9s ease-in-out infinite alternate;
+}
+
+.shop-float-slow {
+  animation: shopFloat 13s ease-in-out infinite alternate;
+}
+
+@keyframes shopFloat {
+  from {
+    transform: translate3d(0, -5px, 0);
+  }
+  to {
+    transform: translate3d(0, 5px, 0);
+  }
+}
+
+/* A tiny sparkle for the hero, kept to three so it reads as deliberate rather than confetti. */
+.shop-twinkle {
+  animation: shopTwinkle 3.6s ease-in-out infinite;
+}
+
+@keyframes shopTwinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* What a product card shows when the business never uploaded a photo. The old treatment was a
+   flat grey box with a crossed-out camera, which on a white card reads as a broken image rather
+   than as a placeholder. A soft brand-tinted plate with a low-contrast mark reads as deliberate. */
+.media-placeholder {
+  background:
+    radial-gradient(ellipse 70% 60% at 30% 20%, rgba(56, 189, 248, 0.22), transparent 70%),
+    linear-gradient(150deg, #f1f6ff 0%, #e8eefc 55%, #f6f9ff 100%);
+  color: #93b4e8;
+}
+
+/* The filled part of the order-progress rail draws itself in once, on mount.
+   `scaleX` rather than `width` so the browser can run it on the compositor. `both` fill mode
+   matters: without it the rail would be visible at full width for one frame before the
+   animation started, which is the opposite of the intent. */
+.shop-rail-fill {
+  transform-origin: left center;
+  animation: shopRailFill 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes shopRailFill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  /* These three are the only loops left on the customer side. Everything else that moves does
+     so once, on mount. A drift that never settles is fine on a marketing hero and actively
+     annoying behind a form someone is filling in. */
+  .shop-float,
+  .shop-float-slow,
+  .shop-twinkle,
+  .shop-rail-fill {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------ cinematic admin panel -- */
+
+/* The admin Overview carries the same photographic identity as the marketing hero, so the
+   panel feels like part of the product rather than a back office bolted on. It is inset as a
+   rounded panel rather than full-bleed, because it renders inside the Shell's padded card.
+
+   The photo, its colour cast and its glow all arrive as custom properties set per page by
+   `AdminHero`. That is what stops the seven admin screens from looking like the same screen
+   seven times: each one gets its own source, its own crop and its own hue. */
+.admin-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(115deg, rgba(7, 19, 41, 0.95) 0%, rgba(7, 19, 41, 0.74) 46%, var(--admin-tint) 100%),
+    radial-gradient(ellipse 60% 70% at 82% 12%, var(--admin-glow), transparent 70%),
+    var(--admin-photo);
+  background-size: cover;
+  background-position: center;
+  animation: heroDrift 46s ease-in-out infinite alternate;
+}
+
+/* Reports renders monochrome on purpose: it is the analytical screen, and desaturating it
+   both signals that and neutralises the one stock asset that clashes with the blue scheme. */
+.admin-hero-bg-mono {
+  filter: grayscale(1) contrast(1.06) brightness(0.95);
+}
+
+/* A heavier, abstract crop used by one screen so it reads as texture rather than as a
+   photograph — the point is that you can tell the pages apart at a glance. */
+.admin-hero-bg-soft {
+  filter: blur(2px) saturate(1.1) brightness(0.9);
+}
+
+/* A single pending item should be findable without reading every row. */
+.admin-live-dot {
+  animation: adminLiveDot 1.9s ease-in-out infinite;
+}
+
+@keyframes adminLiveDot {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.5);
+  }
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0);
+  }
+}
+
+/* ------------------------------------ business owner, customer, and admin portals -- */
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) {
+  background:
+    linear-gradient(90deg, rgba(219, 234, 254, 0.96) 0%, rgba(239, 246, 255, 0.72) 18%, #ffffff 42%, #ffffff 58%, rgba(239, 246, 255, 0.72) 82%, rgba(219, 234, 254, 0.96) 100%);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) > .flex {
+  background:
+    linear-gradient(90deg, rgba(191, 219, 254, 0.72) 0%, rgba(248, 251, 255, 0.88) 28%, #ffffff 50%, rgba(248, 251, 255, 0.88) 72%, rgba(186, 230, 253, 0.62) 100%);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) header {
+  border-color: rgba(191, 219, 254, 0.8);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 8px 24px rgba(16, 22, 51, 0.035);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main {
+  position: relative;
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(37, 99, 235, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37, 99, 235, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.28) 37%, rgba(0, 0, 0, 0.18) 63%, rgba(0, 0, 0, 0.85));
+  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.28) 37%, rgba(0, 0, 0, 0.18) 63%, rgba(0, 0, 0, 0.85));
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main > * {
+  position: relative;
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main > .ui-card {
+  overflow: hidden;
+  border-color: rgba(191, 219, 254, 0.88);
+  background:
+    linear-gradient(90deg, rgba(219, 234, 254, 0.62) 0%, rgba(248, 251, 255, 0.82) 22%, rgba(255, 255, 255, 0.98) 43%, rgba(255, 255, 255, 0.98) 57%, rgba(248, 251, 255, 0.82) 78%, rgba(219, 234, 254, 0.62) 100%),
+    rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 70px rgba(37, 99, 235, 0.09);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main > .ui-card::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.7), transparent);
+}
+
+/* Admin work benefits from a quieter canvas: the individual review panels carry the
+   grouping, while the shell provides the blue identity and depth. */
+.admin-portal-theme > aside {
+  background: linear-gradient(180deg, #0c2948 0%, #071329 68%, #06101f 100%);
+}
+
+.admin-portal-theme > .flex > header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.admin-portal-theme main > .ui-card {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-card .ui-card,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main > .ui-card > * .ui-card {
+  border-color: rgba(191, 219, 254, 0.72);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 38px rgba(16, 22, 51, 0.055);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-card,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .rounded-card {
+  border-color: rgba(191, 219, 254, 0.72);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-btn-primary,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) a.bg-brand,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) button.bg-brand,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) a.bg-primary,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) button.bg-primary,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .bg-cta {
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  background: linear-gradient(60deg, transparent 35%, rgba(255, 255, 255, 0.24) 50%, transparent 65%);
+  transform: translateX(-100%);
+  transition: transform 0.65s ease;
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-btn-primary:hover::after {
+  transform: translateX(100%);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-btn-secondary,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) a[class*="border border-line"],
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) button[class*="border border-line"] {
+  border-color: rgba(191, 219, 254, 0.9);
+  background-color: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 4px 16px rgba(16, 22, 51, 0.035);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .ui-btn-secondary:hover,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) a[class*="border border-line"]:hover,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) button[class*="border border-line"]:hover {
+  border-color: rgba(147, 197, 253, 0.95);
+  background-color: rgba(239, 246, 255, 0.92);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) input,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) select,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) textarea,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .form-input {
+  border-color: rgba(191, 219, 254, 0.86);
+  background-color: rgba(255, 255, 255, 0.92);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) input:focus,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) select:focus,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) textarea:focus,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .form-input:focus {
+  border-color: var(--primary-bright);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) table {
+  border-color: rgba(191, 219, 254, 0.7);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) thead {
+  background: rgba(239, 246, 255, 0.86);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) tbody tr {
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) tbody tr:hover {
+  background: rgba(239, 246, 255, 0.55);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .workflow-strip {
+  scrollbar-width: none;
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main > div.mb-5 {
+  border-color: rgba(191, 219, 254, 0.78);
+  background:
+    linear-gradient(90deg, rgba(239, 246, 255, 0.9) 0%, rgba(255, 255, 255, 0.94) 38%, rgba(255, 255, 255, 0.94) 62%, rgba(239, 246, 255, 0.9) 100%);
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.07);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) footer {
+  border-color: rgba(191, 219, 254, 0.72);
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Keep the admin workspace closest to the landing and login surfaces: cool white canvas,
+   navy rail, and panels that lift gently without becoming decorative cards inside cards. */
+.admin-portal-theme {
+  background:
+    radial-gradient(circle at 92% 4%, rgba(191, 219, 254, 0.58), transparent 25%),
+    linear-gradient(135deg, #f8faff 0%, #eef6ff 100%);
+}
+
+.admin-portal-theme > .flex {
+  background: transparent;
+}
+
+.admin-portal-theme main > .ui-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.admin-portal-theme .admin-panel,
+.admin-portal-theme .admin-stat {
+  border-color: rgba(191, 219, 254, 0.78);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.admin-portal-theme .admin-panel:hover,
+.admin-portal-theme .admin-stat:hover {
+  border-color: rgba(147, 197, 253, 0.95);
+  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.11);
+}
+
