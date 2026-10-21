@@ -48,7 +48,7 @@ export async function getPublicBusinessCategories() {
   try {
     const response = await apiClient.get("/public/business-categories");
     return normalizeCategoryList(response.data.data);
-  } catch (error) {
+  } catch {
     return fallbackBusinessCategories;
   }
 }

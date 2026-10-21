@@ -1,8 +1,28 @@
-import { KeyRound, Power, ShieldCheck, UserPlus, Users } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  FileSpreadsheet,
+  KeyRound,
+  Plus,
+  Power,
+  Receipt,
+  RefreshCw,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Alert, Card, EmptyState, PageHeader, StatCard } from "../../components/ui/index.jsx";
+import { Alert, Card, EmptyState, PageHeader } from "../../components/ui/index.jsx";
+import { BusinessSetupRequired, OWNER_IMAGES } from "../dashboard/ownerUi.jsx";
 import { useModules } from "../../context/ModuleContext.jsx";
 import { useTenant } from "../../context/TenantContext.jsx";
 import {
@@ -59,6 +79,7 @@ export function CashiersPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAllCashiers, setShowAllCashiers] = useState(false);
 
   const moduleEnabled = hasModule("cashier");
 
@@ -194,13 +215,18 @@ export function CashiersPage() {
 
   if (!selectedTenant) {
     return (
-      <section className="space-y-4">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Cashiers</h1>
-        <p className="text-sm text-muted">Create a business before adding cashiers.</p>
-        <Link className="ui-btn-primary" to="/dashboard/business">
-          Create business
-        </Link>
-      </section>
+      <BusinessSetupRequired
+        feature="Cashiers & POS Terminals"
+        description="Add cashier staff accounts, assign till PINs, monitor shift cash balances, and manage terminal access."
+        icon={UserCheck}
+        image={OWNER_IMAGES.cashier}
+        previewTitle="Cashier Counter Management"
+        previewItems={[
+          { title: "Multi-Staff Accounts", desc: "Create PIN-protected sub-accounts for your counter team without sharing owner access." },
+          { title: "Shift Cash Auditing", desc: "Track opening float, cash collected, and closing reconciliation per shift." },
+          { title: "Fast Touch POS", desc: "Barcode scanning, instant item search, and thermal receipt printing." },
+        ]}
+      />
     );
   }
 
@@ -210,54 +236,189 @@ export function CashiersPage() {
 
   if (!moduleEnabled) {
     return (
-      <section className="space-y-5">
-        <PageHeader
-          eyebrow="Counter"
-          title="Cashiers"
-          icon={Users}
-          description="Give your counter staff their own login. They get a simple till screen for in-store orders and printable receipts, and every sale lands in your normal order list."
-        />
-        {error ? <Alert tone="red">{error}</Alert> : null}
-        <EmptyState
-          icon={ShieldCheck}
-          title="The Cashier module is off for this business"
-          description="Turn it on to register cashier accounts, take counter orders, print receipts and import old order sheets."
-          actionLabel="Enable the Cashier module"
-          onAction={enableModule}
-        />
-      </section>
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="space-y-6"
+      >
+        <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950/80 to-blue-900/85 p-8 sm:p-12 shadow-2xl text-white border border-blue-500/20 text-center">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-blue-500/25 blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 -bottom-16 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white/10 border border-white/20 backdrop-blur mb-4">
+            <Store size={32} className="text-sky-300" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-white">In-Store Point of Sale & Cashier Counters</h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm text-slate-200/90 leading-relaxed">
+            Turn on the Cashier & POS module to give your counter staff their own login for in-store orders, rapid barcode scanning, and instant receipt printing.
+          </p>
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={enableModule}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-extrabold text-slate-900 shadow-xl hover:bg-slate-100 transition"
+            >
+              <Store size={18} /> Enable Cashier & POS Counter
+            </button>
+          </div>
+        </div>
+      </motion.section>
     );
   }
 
+  const visibleCashiers = showAllCashiers ? cashiers : cashiers.slice(0, 3);
+
   return (
-    <section className="space-y-6">
-      <PageHeader
-        eyebrow="Counter"
-        title="Cashiers"
-        icon={Users}
-        description="Cashiers sign in at the same business login and land on their own till screen. They can only see this business, and only what you allow them to see."
-        actions={
-          <>
-            <Link to="/dashboard/orders/import" className="ui-btn-secondary">
-              Import old orders
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      {/* 1. CINEMATIC POS HERO - Vivid Photograph with Directional Vignette */}
+      <motion.section
+        initial={{ opacity: 0, scale: 0.99 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative isolate overflow-hidden rounded-3xl bg-slate-950 p-6 sm:p-8 shadow-2xl text-white border border-white/10"
+      >
+        {/* Background Photograph - Retail counter & Cashier POS */}
+        <img
+          src={OWNER_IMAGES.cashier}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 -z-30 h-full w-full object-cover object-center filter brightness-[0.72] contrast-[1.08] saturate-[1.15]"
+          loading="eager"
+        />
+
+        {/* Directional cinematic vignette: high contrast on text side, clear photo visibility on right */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-950/20"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-t from-slate-950/85 via-transparent to-slate-950/30"
+        />
+
+        {/* Subtle atmospheric ambient glows */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-16 h-80 w-80 rounded-full bg-indigo-500/15 blur-3xl" />
+
+        {/* Glowing sky horizon light line */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/80 to-transparent shadow-[0_0_12px_rgba(56,189,248,0.7)]"
+        />
+
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-sky-200 border border-white/20 backdrop-blur">
+                <Store size={13} className="text-sky-300" />
+                In-Store Point of Sale & Counter Team
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-bold text-sky-300 border border-blue-400/30 backdrop-blur">
+                ● {summary.active ?? 0} Staff Active
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.5)]">
+              Cashier Tills & Counter Sales
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-xl">
+              Give counter staff their own login for in-store orders, barcode scanning, and instant customer receipts. All counter sales sync into your business analytics automatically.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              type="button"
+              onClick={() => setShowForm((current) => !current)}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-xs sm:text-sm font-extrabold text-slate-900 shadow-lg hover:bg-slate-100 transition"
+            >
+              {showForm ? <X size={16} /> : <UserPlus size={16} />}
+              <span>{showForm ? "Close Form" : "Add New Cashier"}</span>
+            </motion.button>
+
+            <Link
+              to="/cashier"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-xs sm:text-sm font-bold text-white border border-white/20 backdrop-blur hover:bg-white/20 transition"
+            >
+              <Store size={15} /> Open Till Screen
             </Link>
-            <button type="button" className="ui-btn-primary" onClick={() => setShowForm((current) => !current)}>
-              <UserPlus size={18} />
-              {showForm ? "Close" : "Add cashier"}
-            </button>
-          </>
-        }
-      />
 
-      {message ? <Alert tone="green">{message}</Alert> : null}
-      {error ? <Alert tone="red">{error}</Alert> : null}
+            <Link
+              to="/dashboard/orders/import"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-xs sm:text-sm font-bold text-white border border-white/20 backdrop-blur hover:bg-white/20 transition"
+            >
+              <FileSpreadsheet size={15} /> Import Past Orders
+            </Link>
+          </div>
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Cashiers" value={summary.total ?? 0} icon={Users} tone="violet" />
-        <StatCard label="Active" value={summary.active ?? 0} icon={ShieldCheck} tone="green" />
-        <StatCard label="Orders handled" value={summary.totalOrders ?? 0} tone="blue" />
-        <StatCard label="Sales handled" value={formatMoney(summary.totalSales)} tone="orange" />
-      </div>
+        {/* Cinematic Metric cards */}
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">Total Staff</span>
+              <Users size={17} className="text-sky-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">{summary.total ?? 0}</div>
+            <div className="text-[11px] text-slate-300 font-medium">Registered cashiers</div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">Active Till Logins</span>
+              <ShieldCheck size={17} className="text-emerald-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">{summary.active ?? 0}</div>
+            <div className="text-[11px] text-slate-300 font-medium">Can sign in right now</div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">Till Orders</span>
+              <Receipt size={17} className="text-purple-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">{summary.totalOrders ?? 0}</div>
+            <div className="text-[11px] text-slate-300 font-medium">Handled at counter</div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">Counter Sales</span>
+              <ShoppingBag size={17} className="text-amber-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-amber-300 drop-shadow-[0_2px_8px_rgba(251,191,36,0.4)] truncate">
+              {formatMoney(summary.totalSales)}
+            </div>
+            <div className="text-[11px] text-slate-300 font-medium">Lifetime revenue at till</div>
+          </motion.div>
+        </div>
+      </motion.section>
 
       {showForm ? (
         <Card as="form" onSubmit={submitNewCashier} className="space-y-4">
@@ -345,28 +506,56 @@ export function CashiersPage() {
       ) : null}
 
       <div className="space-y-3">
-        {cashiers.map((cashier) => {
+        {visibleCashiers.map((cashier, index) => {
           const isEditing = editingId === cashier.id;
+          const initials = (cashier.fullName || "C")
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase();
           return (
-            <Card key={cashier.id} className="space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-extrabold text-ink">{cashier.fullName}</h3>
-                    <span className={`ui-pill ${cashier.isActive ? "bg-green-50 text-green-700" : "bg-orange-100 text-orange-700"}`}>
-                      {cashier.isActive ? "Active" : "Inactive"}
-                    </span>
-                    {cashier.employeeCode ? <span className="ui-pill bg-surface text-muted">{cashier.employeeCode}</span> : null}
+            <motion.div
+              key={cashier.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.4) }}
+              whileHover={{ y: -3, transition: { duration: 0.2 } }}
+              className="rounded-2xl border border-line bg-white p-5 shadow-sm transition hover:border-brand/40 hover:shadow-md space-y-4"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3.5">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-brand to-indigo-500 text-sm font-black text-white shadow-sm">
+                    {initials}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-extrabold text-ink">{cashier.fullName}</h3>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
+                        cashier.isActive 
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                          : "bg-slate-100 text-slate-600 border-slate-200"
+                      }`}>
+                        {cashier.isActive ? "Active Till" : "Inactive / Suspended"}
+                      </span>
+                      {cashier.employeeCode ? (
+                        <span className="rounded-md bg-surface border border-line px-2 py-0.5 text-[10px] font-bold text-muted">
+                          Code: {cashier.employeeCode}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-1 text-xs text-muted flex flex-wrap items-center gap-2">
+                      <span>{cashier.email || "No email"}</span>
+                      {cashier.phone ? <span>● {cashier.phone}</span> : null}
+                      <span className="text-subtle">● Last login: {formatDate(cashier.lastLoginAt)}</span>
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs text-muted">
-                    {cashier.email || "No email"} · {cashier.phone || "No phone"}
-                  </div>
-                  <div className="mt-1 text-xs text-subtle">Last login: {formatDate(cashier.lastLoginAt)}</div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-right sm:grid-cols-3">
+
+                <div className="grid grid-cols-3 gap-4 text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-line/60">
                   <Metric label="Orders" value={cashier.stats?.totalOrders ?? 0} />
                   <Metric label="Sales" value={formatMoney(cashier.stats?.totalSales)} />
-                  <Metric label="Last sale" value={cashier.stats?.lastOrderAt ? formatDate(cashier.stats.lastOrderAt) : "-"} />
+                  <Metric label="Last sale" value={cashier.stats?.lastOrderAt ? formatDate(cashier.stats.lastOrderAt) : "—"} />
                 </div>
               </div>
 
@@ -416,10 +605,10 @@ export function CashiersPage() {
                 </div>
               ) : null}
 
-              <div className="flex flex-wrap gap-2 border-t border-line-soft pt-3">
+              <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
                 <button
                   type="button"
-                  className="ui-btn-secondary px-3 py-2 text-xs"
+                  className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink hover:bg-white transition"
                   onClick={() => {
                     setEditingId(isEditing ? "" : cashier.id);
                     setEditDraft({
@@ -431,32 +620,53 @@ export function CashiersPage() {
                     });
                   }}
                 >
-                  {isEditing ? "Close editor" : "Edit"}
+                  {isEditing ? "Close editor" : "Edit Details"}
                 </button>
-                <button type="button" className="ui-btn-secondary px-3 py-2 text-xs" onClick={() => setResetTarget(resetTarget === cashier.id ? "" : cashier.id)}>
-                  <KeyRound size={14} />
-                  Reset password
+                <button type="button" className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink hover:bg-white transition inline-flex items-center gap-1.5" onClick={() => setResetTarget(resetTarget === cashier.id ? "" : cashier.id)}>
+                  <KeyRound size={13} />
+                  Reset Password
                 </button>
-                <button type="button" className="ui-btn-secondary px-3 py-2 text-xs" onClick={() => toggleStatus(cashier)}>
-                  <Power size={14} />
+                <button type="button" className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink hover:bg-white transition inline-flex items-center gap-1.5" onClick={() => toggleStatus(cashier)}>
+                  <Power size={13} />
                   {cashier.isActive ? "Deactivate" : "Activate"}
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                  className="rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50"
                   onClick={() => removeAccess(cashier)}
                 >
-                  Remove access
+                  Remove Access
                 </button>
-                <Link to={`/dashboard/transactions?source=cashier`} className="ml-auto self-center text-xs font-bold text-brand">
-                  View cashier orders
+                <Link to={`/dashboard/transactions?source=cashier`} className="ml-auto self-center text-xs font-bold text-brand hover:underline inline-flex items-center gap-1">
+                  <span>View till orders</span>
+                  <ArrowRight size={13} />
                 </Link>
               </div>
-            </Card>
+            </motion.div>
           );
         })}
+
+        {cashiers.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setShowAllCashiers((curr) => !curr)}
+            className="w-full rounded-xl border border-dashed border-line bg-surface/60 py-3 text-center text-xs font-bold text-brand hover:bg-blue-50/50 hover:border-brand/40 transition flex items-center justify-center gap-1.5"
+          >
+            {showAllCashiers ? (
+              <>
+                <span>Show Fewer Cashiers (Show top 3)</span>
+                <ChevronUp size={14} />
+              </>
+            ) : (
+              <>
+                <span>Show All Registered Cashiers ({cashiers.length - 3} more)</span>
+                <ChevronDown size={14} />
+              </>
+            )}
+          </button>
+        )}
       </div>
-    </section>
+    </motion.section>
   );
 }
 

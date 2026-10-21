@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { requestBusinessEmailPasswordResetOtp, resetBusinessPasswordWithEmailOtp } from "../../services/authApi.js";
 import { requestCustomerEmailPasswordResetOtp, resetCustomerPasswordWithEmailOtp } from "../../services/customerAuthApi.js";
 import { AuthAlert, AuthField, AuthLayout, AuthSubmit } from "./AuthLayout.jsx";
+import { PasswordInput } from "./PasswordInput.jsx";
 import { getApiErrorMessage } from "../../services/apiError.js";
 
 const emailSchema = Joi.object({
@@ -99,7 +100,7 @@ export function PhonePasswordResetPage({ customer = false }) {
         </div>
 
         <AuthField icon={<LockKeyhole size={17} />} label="New password" htmlFor="newPassword" error={form.formState.errors.newPassword?.message}>
-          <input id="newPassword" {...form.register("newPassword")} type="password" className="auth-input" placeholder="Minimum 8 characters" autoComplete="new-password" aria-invalid={Boolean(form.formState.errors.newPassword)} />
+          <PasswordInput id="newPassword" register={form.register} field="newPassword" error={form.formState.errors.newPassword} autoComplete="new-password" />
         </AuthField>
 
         <AuthSubmit isSubmitting={form.formState.isSubmitting}>Reset password</AuthSubmit>

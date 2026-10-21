@@ -1,9 +1,16 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
   BarChart3,
   Boxes,
   CalendarClock,
   CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ClipboardCheck,
   ClipboardList,
   Coins,
   Globe,
@@ -11,15 +18,15 @@ import {
   MessageSquare,
   Package,
   Receipt,
+  RefreshCw,
   ShoppingCart,
   Sparkles,
   Store,
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
-import { Alert, Badge, Card, EmptyState, IconTile, PageHeader, SectionHeading, StatCard } from "../../components/ui/index.jsx";
+import { Alert, Badge, Card, EmptyState, IconTile, SectionHeading, StatCard } from "../../components/ui/index.jsx";
 import { AreaChart, ProgressRing, RankedBarList, SERIES_COLORS, formatCompact } from "../../components/ui/charts.jsx";
 import { useModules } from "../../context/ModuleContext.jsx";
 import { useTenant } from "../../context/TenantContext.jsx";
@@ -27,6 +34,7 @@ import { getAnalyticsSummary } from "../../services/analyticsApi.js";
 import { formatTransactionType } from "../../utils/transaction.js";
 import { SectionTitle } from "../../components/ui/SectionTitle.jsx";
 import { getApiErrorMessage } from "../../services/apiError.js";
+import { BusinessSetupRequired, OWNER_IMAGES } from "./ownerUi.jsx";
 
 const STATUS_TONE = {
   paid: "green",
@@ -44,41 +52,55 @@ export function AnalyticsPage() {
   const [analytics, setAnalytics] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview"); // 'overview' | 'products' | 'transactions'
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
+
   const analyticsEnabled = enabledModules.includes("analytics");
 
-  useEffect(() => {
-    async function loadAnalytics() {
-      if (!selectedTenant || !analyticsEnabled) {
-        setAnalytics(null);
-        return;
-      }
-      setIsLoading(true);
-      setError("");
-      try {
-        const data = await getAnalyticsSummary(selectedTenant.id);
-        setAnalytics(data);
-      } catch (requestError) {
-        setError(getApiErrorMessage(requestError, "Unable to load analytics."));
-      } finally {
-        setIsLoading(false);
-      }
+  async function loadAnalytics() {
+    if (!selectedTenant || !analyticsEnabled) {
+      setAnalytics(null);
+      return;
     }
+    setIsLoading(true);
+    setError("");
+    try {
+      const data = await getAnalyticsSummary(selectedTenant.id);
+      setAnalytics(data);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Unable to load analytics."));
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
+  useEffect(() => {
     loadAnalytics();
-  }, [selectedTenant, analyticsEnabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTenant?.id, analyticsEnabled]);
 
   if (isLoadingTenants) {
-    return <section className="text-sm text-muted">Loading analytics workspace...</section>;
+    return (
+      <div className="flex h-64 items-center justify-center rounded-2xl border border-line bg-white p-8 text-center text-sm text-muted">
+        <RefreshCw className="mr-2 h-5 w-5 animate-spin text-brand" />
+        Loading analytics workspace...
+      </div>
+    );
   }
 
   if (!selectedTenant) {
     return (
-      <EmptyState
-        icon={BarChart3}
-        title="No business selected"
-        description="Create or select a business first — analytics are reported per business."
-        actionLabel="Create Business"
-        actionTo="/dashboard/business"
+      <BusinessSetupRequired
+        feature="Analytics & Performance"
+        description="Track real-time store revenue, average order value, conversion rates, and sales channel performance."
+        icon={TrendingUp}
+        image={OWNER_IMAGES.analytics}
+        previewTitle="Business Intelligence & Analytics"
+        previewItems={[
+          { title: "Real-time Sales Tracking", desc: "Track daily, weekly, and monthly revenue performance with live interactive charts." },
+          { title: "Channel Attribution", desc: "Compare sales performance across WhatsApp, online storefront, and cashier POS." },
+          { title: "Top Performing Products", desc: "Identify your bestselling items and inventory turnover velocity." },
+        ]}
       />
     );
   }
@@ -88,7 +110,7 @@ export function AnalyticsPage() {
       <EmptyState
         icon={BarChart3}
         title={`Enable analytics for ${selectedTenant.name}`}
-        description="Dashboards, trends and conversion reporting unlock once the analytics module is enabled for this business."
+        description="Live charts, revenue tracking, and conversion reporting unlock once the analytics module is enabled."
         actionLabel="Manage Modules"
         actionTo="/dashboard/modules"
       />
@@ -107,273 +129,437 @@ export function AnalyticsPage() {
   const totalRequests =
     (summary.totalQuotes ?? 0) + (summary.totalBookings ?? 0) + (summary.totalInquiries ?? 0);
 
+  const visibleTransactions = showAllTransactions ? recentTransactions : recentTransactions.slice(0, 5);
+
   return (
-    <section className="space-y-6">
-      <PageHeader
-        icon={BarChart3}
-        eyebrow="Analytics"
-        title={selectedTenant.name}
-        description="Monitor transactions, revenue, inventory pressure and recent business activity from one place."
-        actions={
-          analytics?.generatedAt ? (
-            <Badge tone="slate" icon={CalendarClock}>
-              Updated {new Date(analytics.generatedAt).toLocaleString()}
-            </Badge>
-          ) : null
-        }
-      />
-
-      <Alert tone="red">{error}</Alert>
-      {isLoading ? <div className="text-sm text-muted">Loading analytics...</div> : null}
-
-      {/* ---------------------------------------------------------- headline -- */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Gross Revenue" value={formatCompact(revenue.grossRevenue)} hint="Non-cancelled orders" icon={Coins} tone="green" />
-        <StatCard label="Avg Order Value" value={formatCompact(revenue.averageOrderValue)} icon={TrendingUp} tone="violet" />
-        <StatCard label="Total Orders" value={summary.totalOrders ?? 0} icon={ShoppingCart} tone="purple" />
-        <StatCard label="Today Orders" value={summary.todayOrders ?? 0} icon={CalendarDays} tone="orange" />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Customers" value={summary.totalCustomers ?? 0} icon={Users} tone="blue" />
-        <StatCard label="Items" value={summary.totalItems ?? 0} icon={Boxes} tone="violet" />
-        <StatCard label="Transactions" value={summary.totalTransactions ?? 0} icon={Receipt} tone="purple" />
-        <StatCard label="Marketplace Orders" value={summary.marketplaceOrderCount ?? 0} hint="Customer portal source" icon={Store} tone="green" />
-      </div>
-
-      {/* ------------------------------------------------------------ charts -- */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <SectionHeading icon={ShoppingCart} title="Order Trend" description="Orders placed per day" />
-          <AreaChart
-            data={trends}
-            series={[{ key: "orders", name: "Orders", color: SERIES_COLORS.purple }]}
-            height={230}
-          />
-        </Card>
-
-        <Card>
-          <SectionHeading icon={Coins} title="Revenue Trend" description="Revenue captured per day" />
-          <AreaChart
-            data={trends}
-            series={[{ key: "revenue", name: "Revenue", color: SERIES_COLORS.blue }]}
-            height={230}
-          />
-        </Card>
-      </div>
-
-      <Card>
-        <SectionHeading
-          icon={ClipboardList}
-          title="Demand Mix"
-          description="Quotes, bookings and inquiries alongside orders"
-          actions={<Badge tone="violet">{totalRequests} requests total</Badge>}
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      {/* 1. CINEMATIC HERO BANNER */}
+      <motion.section
+        initial={{ opacity: 0, scale: 0.99 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative isolate overflow-hidden rounded-3xl bg-slate-950 p-6 sm:p-8 shadow-2xl text-white border border-white/10"
+      >
+        {/* Background Photograph */}
+        <img
+          src={OWNER_IMAGES.analytics}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 -z-30 h-full w-full object-cover object-center filter brightness-[0.70] contrast-[1.10] saturate-[1.15]"
+          loading="eager"
         />
-        <AreaChart
-          data={trends}
-          height={280}
-          series={[
-            { key: "orders", name: "Orders", color: SERIES_COLORS.purple },
-            { key: "quotes", name: "Quotes", color: SERIES_COLORS.blue, area: false },
-            { key: "bookings", name: "Bookings", color: SERIES_COLORS.orange, area: false },
-            { key: "inquiries", name: "Inquiries", color: SERIES_COLORS.green, area: false },
-          ]}
+
+        {/* Directional cinematic vignette */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-950/25"
         />
-      </Card>
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-t from-slate-950/85 via-transparent to-slate-950/30"
+        />
+        {/* Horizon highlight */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/50 to-transparent"
+        />
 
-      {/* -------------------------------------------------------- conversion -- */}
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <Card>
-          <SectionHeading icon={TrendingUp} title="Conversion Summary" description="Operational ratios" />
-          <div className="grid grid-cols-2 gap-6 pt-2 sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
-            <ProgressRing value={conversion.marketplaceShare ?? 0} label="Marketplace" caption="Share of orders" color={SERIES_COLORS.purple} />
-            <ProgressRing value={conversion.quoteApprovalRate ?? 0} label="Quotes" caption="Approved" color={SERIES_COLORS.blue} />
-            <ProgressRing value={conversion.bookingConfirmationRate ?? 0} label="Bookings" caption="Confirmed" color={SERIES_COLORS.orange} />
-            <ProgressRing value={conversion.inquiryResponseRate ?? 0} label="Inquiries" caption="Responded" color={SERIES_COLORS.green} />
-          </div>
-        </Card>
+        <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sky-300 ring-1 ring-white/15 backdrop-blur-md">
+                <BarChart3 className="h-3.5 w-3.5 text-sky-400" />
+                Revenue &amp; Intelligence
+              </span>
+              {analytics?.generatedAt ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Live Sync
+                </span>
+              ) : null}
+            </div>
 
-        <Card>
-          <SectionHeading
-            icon={Package}
-            title="Top Products and Services"
-            description="Ranked by revenue"
-            actions={<Badge tone="slate">{topItems.length} shown</Badge>}
-          />
-          {topItems.length ? (
-            <RankedBarList
-              items={topItems.map((item) => ({
-                id: `${item.itemId}-${item.name}`,
-                name: item.name,
-                value: item.revenue,
-                caption: `${item.quantity} qty · ${item.orders} orders`,
-              }))}
-            />
-          ) : (
-            <p className="rounded-xl border border-dashed border-line bg-surface p-4 text-sm text-muted">
-              Not enough order data to rank items yet.
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl [text-shadow:0_2px_16px_rgba(0,0,0,0.6)]">
+              Business Analytics &amp; Growth
+            </h1>
+
+            <p className="mt-2 text-sm sm:text-base leading-relaxed text-slate-200 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
+              Track real-time gross revenue, customer order volume, product demand trends, and operational conversion across your online store and cashier channels.
             </p>
+
+            {/* Quick Hero Stat Chips */}
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-2xl border border-white/20 bg-slate-900/65 p-3.5 backdrop-blur-md shadow-lg transition hover:bg-slate-900/80">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-300 truncate">Gross Revenue</div>
+                <div className="mt-1 flex items-baseline gap-1 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                  <span className="text-xs font-bold text-emerald-400">Rs</span>
+                  <span className="text-white font-black">{formatCompact(revenue.grossRevenue)}</span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/20 bg-slate-900/65 p-3.5 backdrop-blur-md shadow-lg transition hover:bg-slate-900/80">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-300 truncate">Avg Order Value</div>
+                <div className="mt-1 flex items-baseline gap-1 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                  <span className="text-xs font-bold text-sky-400">Rs</span>
+                  <span className="text-white font-black">{formatCompact(revenue.averageOrderValue)}</span>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/20 bg-slate-900/65 p-3.5 backdrop-blur-md shadow-lg transition hover:bg-slate-900/80">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-300 truncate">Total Orders</div>
+                <div className="mt-1 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">{summary.totalOrders ?? 0}</div>
+              </div>
+              <div className="rounded-2xl border border-white/20 bg-slate-900/65 p-3.5 backdrop-blur-md shadow-lg transition hover:bg-slate-900/80">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-300 truncate">Today Orders</div>
+                <div className="mt-1 text-2xl font-black text-amber-300 drop-shadow-[0_2px_8px_rgba(251,191,36,0.4)]">{summary.todayOrders ?? 0}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Hero Actions */}
+          <div className="flex flex-col gap-2.5 sm:flex-row lg:flex-col items-start lg:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={loadAnalytics}
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-slate-900 shadow-lg hover:bg-slate-100 disabled:opacity-60 transition active:scale-95"
+              >
+                <RefreshCw className={`h-4 w-4 text-brand ${isLoading ? "animate-spin" : ""}`} />
+                <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
+              </button>
+              <Link
+                to="/dashboard/reports"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/20 active:scale-95"
+              >
+                <ClipboardCheck className="h-4 w-4 text-sky-300" />
+                <span>Daily Briefing</span>
+              </Link>
+            </div>
+            <span className="text-xs text-slate-300">
+              {analytics?.generatedAt ? `Synced ${new Date(analytics.generatedAt).toLocaleTimeString()}` : "Live data"}
+            </span>
+          </div>
+        </div>
+      </motion.section>
+
+      {error ? <Alert tone="red">{error}</Alert> : null}
+
+      {/* 2. TABBED NAVIGATION: Overview & Trends, Products & Stock, Transactions & Insights */}
+      <div className="flex items-center border-b border-line bg-white rounded-2xl px-3 pt-2 shadow-card gap-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab("overview")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition whitespace-nowrap ${
+            activeTab === "overview"
+              ? "border-brand text-brand"
+              : "border-transparent text-muted hover:text-ink"
+          }`}
+        >
+          <TrendingUp className="h-4 w-4" />
+          <span>Revenue &amp; Trends</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("products")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition whitespace-nowrap ${
+            activeTab === "products"
+              ? "border-brand text-brand"
+              : "border-transparent text-muted hover:text-ink"
+          }`}
+        >
+          <Package className="h-4 w-4" />
+          <span>Top Products &amp; Stock</span>
+          {lowStockItems.length > 0 && (
+            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+              {lowStockItems.length} alert{lowStockItems.length > 1 ? "s" : ""}
+            </span>
           )}
-        </Card>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("transactions")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition whitespace-nowrap ${
+            activeTab === "transactions"
+              ? "border-brand text-brand"
+              : "border-transparent text-muted hover:text-ink"
+          }`}
+        >
+          <Receipt className="h-4 w-4" />
+          <span>Recent Activity &amp; Guidance</span>
+        </button>
       </div>
 
-      {/* ----------------------------------------------------------- insight -- */}
-      {analytics?.dashboardSummary ? (
-        <Card className="border-brand-200 bg-surface-purple">
-          <div className="flex items-start gap-4">
-            <IconTile icon={Sparkles} tone="purple" size={44} />
-            <div className="min-w-0">
-              <SectionTitle>AI Summary</SectionTitle>
-              <p className="mt-1.5 text-sm leading-7 text-muted">{analytics.dashboardSummary}</p>
-            </div>
+      {/* TAB 1: OVERVIEW & REVENUE CHARTS */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {/* Secondary stats row */}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Total Customers" value={summary.totalCustomers ?? 0} icon={Users} tone="blue" />
+            <StatCard label="Catalog Items" value={summary.totalItems ?? 0} icon={Boxes} tone="violet" />
+            <StatCard label="Total Transactions" value={summary.totalTransactions ?? 0} icon={Receipt} tone="purple" />
+            <StatCard label="Customer Portal Orders" value={summary.marketplaceOrderCount ?? 0} hint="Self-service portal" icon={Store} tone="green" />
           </div>
-        </Card>
-      ) : null}
 
-      {categoryGuidance.categoryName || categoryGuidance.suggestions?.length ? (
-        <Card>
-          <SectionHeading
-            icon={Lightbulb}
-            title="Category Guidance"
-            description="Tailored to this business category"
-            actions={<Badge tone="violet">{categoryGuidance.categoryName || "General"}</Badge>}
-          />
+          {/* Area charts */}
           <div className="grid gap-6 xl:grid-cols-2">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-[0.12em] text-subtle">Suggested focus</div>
-              <ul className="mt-3 space-y-2">
-                {(categoryGuidance.suggestions || []).map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-muted">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
-                    {item}
-                  </li>
-                ))}
-                {!categoryGuidance.suggestions?.length ? (
-                  <li className="text-sm text-muted">No category suggestions available yet.</li>
-                ) : null}
-              </ul>
-            </div>
-            <div>
-              <div className="text-xs font-bold uppercase tracking-[0.12em] text-subtle">Live insight status</div>
-              <ul className="mt-3 space-y-2">
-                {(categoryGuidance.insights || []).map((item) => {
-                  const tone =
-                    item.status === "attention"
-                      ? "border-orange-200 bg-orange-50 text-orange-700"
-                      : item.status === "healthy"
-                        ? "border-green-200 bg-green-50 text-green-700"
-                        : "border-line bg-white text-muted";
-                  return (
-                    <li key={item.label} className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm font-semibold ${tone}`}>
-                      {item.status === "attention" ? <AlertTriangle size={15} className="shrink-0" /> : null}
-                      {item.label}
-                    </li>
-                  );
-                })}
-                {!categoryGuidance.insights?.length ? (
-                  <li className="text-sm text-muted">No category insight flags yet.</li>
-                ) : null}
-              </ul>
-            </div>
-          </div>
-        </Card>
-      ) : null}
+            <Card>
+              <SectionHeading icon={ShoppingCart} title="Order Volume Trend" description="Total orders placed per day" />
+              <AreaChart
+                data={trends}
+                series={[{ key: "orders", name: "Orders", color: SERIES_COLORS.purple }]}
+                height={230}
+              />
+            </Card>
 
-      {/* ------------------------------------------------------------ tables -- */}
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <SectionHeading
-            icon={Receipt}
-            title="Recent Transactions"
-            description="Latest activity across this business"
-            actions={<Badge tone="slate">{recentTransactions.length} shown</Badge>}
-          />
-          <div className="divide-y divide-line-soft">
-            {recentTransactions.map((order) => (
-              <div key={order.id} className="flex items-center gap-4 py-3 first:pt-0">
-                <IconTile icon={ShoppingCart} tone="violet" size={38} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-bold text-ink">{order.transactionNumber}</div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-subtle">
-                    <span>{new Date(order.createdAt).toLocaleString()}</span>
-                    <span>·</span>
-                    <span className="capitalize">{formatTransactionType(order.transactionType)}</span>
-                    <span>·</span>
-                    <span>{order.source}</span>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <div className="text-sm font-extrabold text-ink">{formatCompact(order.pricing?.total ?? 0)}</div>
-                  <Badge tone={STATUS_TONE[order.status] || "slate"} className="mt-1 capitalize">
-                    {String(order.status || "").replaceAll("_", " ")}
-                  </Badge>
-                </div>
+            <Card>
+              <SectionHeading icon={Coins} title="Captured Revenue Trend" description="Gross revenue captured per day" />
+              <AreaChart
+                data={trends}
+                series={[{ key: "revenue", name: "Revenue", color: SERIES_COLORS.blue }]}
+                height={230}
+              />
+            </Card>
+          </div>
+
+          {/* Demand Mix & Conversion */}
+          <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card>
+              <SectionHeading
+                icon={ClipboardList}
+                title="Customer Demand Mix"
+                description="Orders, quotes, bookings, and inquiries"
+                actions={<Badge tone="violet">{totalRequests} total requests</Badge>}
+              />
+              <AreaChart
+                data={trends}
+                height={260}
+                series={[
+                  { key: "orders", name: "Orders", color: SERIES_COLORS.purple },
+                  { key: "quotes", name: "Quotes", color: SERIES_COLORS.blue, area: false },
+                  { key: "bookings", name: "Bookings", color: SERIES_COLORS.orange, area: false },
+                  { key: "inquiries", name: "Inquiries", color: SERIES_COLORS.green, area: false },
+                ]}
+              />
+            </Card>
+
+            <Card>
+              <SectionHeading icon={TrendingUp} title="Conversion Ratios" description="Operational efficiency metrics" />
+              <div className="grid grid-cols-2 gap-4 pt-3">
+                <ProgressRing value={conversion.marketplaceShare ?? 0} label="Marketplace" caption="Share of orders" color={SERIES_COLORS.purple} />
+                <ProgressRing value={conversion.quoteApprovalRate ?? 0} label="Quotes" caption="Approval rate" color={SERIES_COLORS.blue} />
+                <ProgressRing value={conversion.bookingConfirmationRate ?? 0} label="Bookings" caption="Confirmation rate" color={SERIES_COLORS.orange} />
+                <ProgressRing value={conversion.inquiryResponseRate ?? 0} label="Inquiries" caption="Response rate" color={SERIES_COLORS.green} />
               </div>
-            ))}
-            {!recentTransactions.length ? (
-              <p className="rounded-xl border border-dashed border-line bg-surface p-4 text-sm text-muted">
-                No recent transactions yet.
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: TOP PRODUCTS & INVENTORY PRESSURE */}
+      {activeTab === "products" && (
+        <div className="grid gap-6 xl:grid-cols-2">
+          {/* Top Selling Products */}
+          <Card>
+            <SectionHeading
+              icon={Package}
+              title="Top Products by Revenue"
+              description="Ranked by gross sales volume"
+              actions={<Badge tone="slate">{topItems.length} items ranked</Badge>}
+            />
+            {topItems.length ? (
+              <div className="pt-2">
+                <RankedBarList
+                  items={topItems.map((item) => ({
+                    id: `${item.itemId}-${item.name}`,
+                    name: item.name,
+                    value: item.revenue,
+                    caption: `${item.quantity} sold · ${item.orders} orders`,
+                  }))}
+                />
+              </div>
+            ) : (
+              <p className="rounded-xl border border-dashed border-line bg-surface p-6 text-center text-sm text-muted">
+                Not enough order activity recorded yet to rank items.
               </p>
-            ) : null}
-          </div>
-        </Card>
+            )}
+          </Card>
 
-        <Card>
-          <SectionHeading
-            icon={AlertTriangle}
-            title="Low Stock Items"
-            description="Below their reorder threshold"
-            actions={<Badge tone={lowStockItems.length ? "orange" : "green"}>{lowStockItems.length} items</Badge>}
-          />
-          <div className="space-y-2.5">
-            {lowStockItems.map((item) => {
-              const quantity = item.stock?.quantity ?? 0;
-              const threshold = item.stock?.lowStockThreshold ?? 0;
-              const pct = threshold > 0 ? Math.min(100, Math.round((quantity / threshold) * 100)) : 0;
-              return (
-                <div key={item.id} className="rounded-xl border border-orange-200 bg-orange-50 p-3.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="truncate text-sm font-bold text-ink">{item.name}</span>
-                    <span className="shrink-0 text-xs font-extrabold text-orange-600">
-                      {quantity} / {threshold}
-                    </span>
+          {/* Low Stock Alerts */}
+          <Card>
+            <SectionHeading
+              icon={AlertTriangle}
+              title="Inventory Pressure &amp; Low Stock"
+              description="Items nearing or below their minimum reorder threshold"
+              actions={<Badge tone={lowStockItems.length ? "orange" : "green"}>{lowStockItems.length} low stock</Badge>}
+            />
+            <div className="space-y-3 pt-2">
+              {lowStockItems.map((item) => {
+                const quantity = item.stock?.quantity ?? 0;
+                const threshold = item.stock?.lowStockThreshold ?? 0;
+                const pct = threshold > 0 ? Math.min(100, Math.round((quantity / threshold) * 100)) : 0;
+                return (
+                  <div key={item.id} className="rounded-xl border border-orange-200 bg-orange-50/70 p-3.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-sm font-bold text-ink">{item.name}</span>
+                      <span className="shrink-0 text-xs font-extrabold text-orange-700">
+                        {quantity} left (Threshold: {threshold})
+                      </span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-orange-100">
+                      <div className="h-full rounded-full bg-orange-500 transition-all" style={{ width: `${Math.max(6, pct)}%` }} />
+                    </div>
                   </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-orange-100">
-                    <div className="h-full rounded-full bg-orange-500 transition-all" style={{ width: `${Math.max(4, pct)}%` }} />
+                );
+              })}
+              {!lowStockItems.length ? (
+                <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold text-emerald-800">
+                  <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                  All catalog items are currently stocked safely above their reorder thresholds.
+                </div>
+              ) : null}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* TAB 3: RECENT ACTIVITY & AI GUIDANCE */}
+      {activeTab === "transactions" && (
+        <div className="space-y-6">
+          {/* AI Executive Summary Card */}
+          {analytics?.dashboardSummary ? (
+            <Card className="border-brand-200 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-white">
+              <div className="flex items-start gap-4">
+                <IconTile icon={Sparkles} tone="purple" size={44} />
+                <div className="min-w-0">
+                  <SectionTitle>Executive AI Summary</SectionTitle>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink font-normal">{analytics.dashboardSummary}</p>
+                </div>
+              </div>
+            </Card>
+          ) : null}
+
+          {/* Category Guidance */}
+          {categoryGuidance.categoryName || categoryGuidance.suggestions?.length ? (
+            <Card>
+              <SectionHeading
+                icon={Lightbulb}
+                title="Category Strategic Guidance"
+                description="Actionable operational advice tailored to your market niche"
+                actions={<Badge tone="violet">{categoryGuidance.categoryName || "General Retail"}</Badge>}
+              />
+              <div className="grid gap-6 pt-2 xl:grid-cols-2">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted">Focus Recommendations</div>
+                  <ul className="mt-3 space-y-2">
+                    {(categoryGuidance.suggestions || []).map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 rounded-xl border border-line bg-surface/50 px-3.5 py-2.5 text-xs text-ink leading-relaxed">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                    {!categoryGuidance.suggestions?.length ? (
+                      <li className="text-xs text-muted">No custom suggestions available yet.</li>
+                    ) : null}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted">Operational Health Checks</div>
+                  <ul className="mt-3 space-y-2">
+                    {(categoryGuidance.insights || []).map((item) => {
+                      const isAlert = item.status === "attention";
+                      return (
+                        <li
+                          key={item.label}
+                          className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-xs font-semibold ${
+                            isAlert
+                              ? "border-orange-200 bg-orange-50 text-orange-800"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                          }`}
+                        >
+                          {isAlert ? <AlertTriangle size={15} className="shrink-0 text-orange-600" /> : <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />}
+                          <span>{item.label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          ) : null}
+
+          {/* Recent Transactions List with Progressive Disclosure */}
+          <Card>
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <SectionHeading
+                icon={Receipt}
+                title="Recent Transactions"
+                description="Latest checkout orders across your storefront, POS, and WhatsApp"
+                actions={<Badge tone="slate">{recentTransactions.length} total logged</Badge>}
+              />
+            </div>
+
+            <div className="divide-y divide-line-soft pt-1">
+              {visibleTransactions.map((order) => (
+                <div key={order.id} className="flex items-center gap-4 py-3">
+                  <IconTile icon={ShoppingCart} tone="violet" size={38} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-ink">{order.transactionNumber}</div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-muted">
+                      <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <span>·</span>
+                      <span className="capitalize">{formatTransactionType(order.transactionType)}</span>
+                      <span>·</span>
+                      <span className="capitalize">{order.source}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-sm font-extrabold text-ink">{formatCompact(order.pricing?.total ?? 0)}</div>
+                    <Badge tone={STATUS_TONE[order.status] || "slate"} className="mt-1 capitalize">
+                      {String(order.status || "").replaceAll("_", " ")}
+                    </Badge>
                   </div>
                 </div>
-              );
-            })}
-            {!lowStockItems.length ? (
-              <div className="flex items-center gap-2.5 rounded-xl border border-green-200 bg-green-50 px-3.5 py-3 text-sm font-semibold text-green-700">
-                <Package size={16} />
-                Every item is above its reorder threshold.
+              ))}
+
+              {!recentTransactions.length ? (
+                <p className="rounded-xl border border-dashed border-line bg-surface p-6 text-center text-xs text-muted">
+                  No customer transactions recorded yet.
+                </p>
+              ) : null}
+            </div>
+
+            {/* Progressive disclosure */}
+            {recentTransactions.length > 5 && (
+              <div className="pt-3 text-center border-t border-line">
+                <button
+                  type="button"
+                  onClick={() => setShowAllTransactions(!showAllTransactions)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline"
+                >
+                  {showAllTransactions ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5" />
+                      Show Less (Latest 5)
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                      Show All {recentTransactions.length} Transactions
+                    </>
+                  )}
+                </button>
               </div>
-            ) : null}
-          </div>
-        </Card>
-      </div>
-
-      {/* Website status sits apart from the metrics: it is a state, not a measurement. */}
-      <Card className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <IconTile icon={Globe} tone="blue" size={40} />
-          <div>
-            <div className="text-sm font-bold text-ink">Website Status</div>
-            <div className="text-xs text-subtle">Public storefront visibility</div>
-          </div>
+            )}
+          </Card>
         </div>
-        <Badge tone={selectedTenant.websiteStatus === "published" ? "green" : "orange"} className="capitalize">
-          {selectedTenant.websiteStatus || "not set"}
-        </Badge>
-      </Card>
-
-      {!trends.length && !recentTransactions.length ? (
-        <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-line bg-surface px-4 py-3 text-sm text-muted">
-          <MessageSquare size={16} />
-          Charts fill in as orders, quotes and bookings come through.
-        </div>
-      ) : null}
-    </section>
+      )}
+    </motion.section>
   );
 }

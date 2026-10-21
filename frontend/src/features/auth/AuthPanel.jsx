@@ -2,6 +2,7 @@ import { KeyRound, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { AuthAlert, AuthField, AuthFooterLinks, AuthLayout, AuthSubmit } from "./AuthLayout.jsx";
+import { PasswordInput } from "./PasswordInput.jsx";
 
 /**
  * Login/register form rendered inside the shared auth shell.
@@ -153,14 +154,12 @@ export function AuthPanel({
 
         {mode === "register" || !isPhoneOtp ? (
           <AuthField icon={<LockKeyhole size={17} />} label="Password" htmlFor="password" error={errors.password?.message}>
-            <input
+            <PasswordInput
               id="password"
-              {...register("password")}
-              type="password"
-              className="auth-input"
-              placeholder="Minimum 8 characters"
+              register={register}
+              field="password"
+              error={errors.password}
               autoComplete={mode === "register" ? "new-password" : "current-password"}
-              aria-invalid={Boolean(errors.password)}
             />
           </AuthField>
         ) : null}

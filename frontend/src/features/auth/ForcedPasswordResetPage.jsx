@@ -10,6 +10,7 @@ import { useCustomer } from "../../context/CustomerContext.jsx";
 import { changeBusinessPassword } from "../../services/authApi.js";
 import { changeCustomerPassword } from "../../services/customerAuthApi.js";
 import { AuthAlert, AuthField, AuthLayout, AuthSubmit } from "./AuthLayout.jsx";
+import { PasswordInput } from "./PasswordInput.jsx";
 import { getApiErrorMessage } from "../../services/apiError.js";
 
 const schema = Joi.object({
@@ -71,13 +72,13 @@ export function ForcedPasswordResetPage({ customer = false }) {
 
       <form className="space-y-4" onSubmit={form.handleSubmit(submit)} noValidate>
         <AuthField icon={<LockKeyhole size={17} />} label="Current password" htmlFor="currentPassword" error={form.formState.errors.currentPassword?.message}>
-          <input id="currentPassword" {...form.register("currentPassword")} type="password" className="auth-input" placeholder="Your existing password" autoComplete="current-password" aria-invalid={Boolean(form.formState.errors.currentPassword)} />
+          <PasswordInput id="currentPassword" register={form.register} field="currentPassword" error={form.formState.errors.currentPassword} autoComplete="current-password" placeholder="Your existing password" />
         </AuthField>
         <AuthField icon={<LockKeyhole size={17} />} label="New password" htmlFor="newPassword" error={form.formState.errors.newPassword?.message}>
-          <input id="newPassword" {...form.register("newPassword")} type="password" className="auth-input" placeholder="Minimum 8 characters" autoComplete="new-password" aria-invalid={Boolean(form.formState.errors.newPassword)} />
+          <PasswordInput id="newPassword" register={form.register} field="newPassword" error={form.formState.errors.newPassword} autoComplete="new-password" />
         </AuthField>
         <AuthField icon={<LockKeyhole size={17} />} label="Confirm new password" htmlFor="confirmPassword" error={form.formState.errors.confirmPassword?.message}>
-          <input id="confirmPassword" {...form.register("confirmPassword")} type="password" className="auth-input" placeholder="Re-enter new password" autoComplete="new-password" aria-invalid={Boolean(form.formState.errors.confirmPassword)} />
+          <PasswordInput id="confirmPassword" register={form.register} field="confirmPassword" error={form.formState.errors.confirmPassword} autoComplete="new-password" placeholder="Re-enter new password" />
         </AuthField>
         <AuthSubmit isSubmitting={form.formState.isSubmitting}>Update password and continue</AuthSubmit>
       </form>

@@ -32,9 +32,9 @@
   --surface-purple: #f0f7ff;
 
   /* Typography */
-  --text-primary: #101633;
-  --text-secondary: #52638d;
-  --text-muted: #8490ae;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
   --text-white: #ffffff;
 
   /* Borders */
@@ -117,8 +117,16 @@ textarea {
   border: 0;
   padding: 0.75rem 0;
   color: var(--text-primary);
-  outline: none;
+  outline: none !important;
   background: transparent;
+  box-shadow: none !important;
+}
+
+.auth-input:focus,
+.auth-input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
 }
 
 .auth-input::placeholder {
@@ -128,11 +136,11 @@ textarea {
 .form-input {
   width: 100%;
   border-radius: 0.75rem;
-  border: 1px solid var(--border);
+  border: 1px solid #cbd5e1;
   background: var(--surface);
   padding: 0.7rem 0.95rem;
   color: var(--text-primary);
-  outline: none;
+  outline: none !important;
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease;
@@ -142,9 +150,11 @@ textarea {
   color: var(--text-muted);
 }
 
-.form-input:focus {
-  border-color: var(--primary-bright);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+.form-input:focus,
+.form-input:focus-visible {
+  border-color: #94a3b8;
+  outline: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* --------------------------------------------------------------- auth -- */
@@ -173,41 +183,35 @@ textarea {
   position: absolute;
   inset: 0;
   background-image:
-    /* Three cooperating layers instead of one blanket wash. A flat 0.84 scrim hid the
-       photograph so completely that the panel read as a flat navy block. The base gradient
-       only darkens where it must (top edge for the eyebrow, bottom for the footnote), and a
-       second horizontal gradient darkens the left half where the headline sits. Where the
-       copy ends, the photo is allowed to show through at roughly half strength. */
-    linear-gradient(180deg, rgba(7, 19, 41, 0.92) 0%, rgba(7, 19, 41, 0.62) 26%, rgba(7, 19, 41, 0.5) 55%, rgba(7, 19, 41, 0.88) 100%),
-    linear-gradient(100deg, rgba(7, 19, 41, 0.82) 0%, rgba(7, 19, 41, 0.5) 48%, rgba(7, 19, 41, 0.12) 100%),
-    radial-gradient(ellipse 70% 55% at 22% 22%, rgba(37, 99, 235, 0.34), transparent 70%),
+    linear-gradient(180deg, rgba(12, 36, 72, 0.72) 0%, rgba(14, 44, 88, 0.38) 35%, rgba(12, 38, 76, 0.42) 65%, rgba(10, 30, 62, 0.78) 100%),
+    linear-gradient(100deg, rgba(12, 36, 72, 0.65) 0%, rgba(14, 44, 88, 0.3) 50%, rgba(12, 38, 76, 0.1) 100%),
+    radial-gradient(ellipse 70% 55% at 20% 20%, rgba(56, 189, 248, 0.35), transparent 70%),
     var(--auth-photo);
   background-size: cover;
   background-position: center;
-  /* A touch of saturation so the source photos still feel like photographs once the scrim
-     has cooled them toward the brand's navy. */
-  filter: saturate(1.08) contrast(1.03);
+  filter: saturate(1.1) brightness(1.05);
   animation: heroDrift 40s ease-in-out infinite alternate;
 }
 
 .auth-story-photo-light {
   background-image:
-    linear-gradient(180deg, rgba(7, 19, 41, 0.7) 0%, rgba(7, 19, 41, 0.42) 100%),
-    linear-gradient(100deg, rgba(7, 19, 41, 0.55) 0%, rgba(7, 19, 41, 0.18) 100%),
-    radial-gradient(ellipse 75% 60% at 30% 20%, rgba(37, 99, 235, 0.26), transparent 70%),
+    linear-gradient(180deg, rgba(12, 36, 72, 0.62) 0%, rgba(12, 36, 72, 0.32) 100%),
+    linear-gradient(100deg, rgba(12, 36, 72, 0.48) 0%, rgba(12, 36, 72, 0.12) 100%),
+    radial-gradient(ellipse 75% 60% at 30% 20%, rgba(56, 189, 248, 0.3), transparent 70%),
     var(--auth-photo);
 }
 
 .auth-field {
-  box-shadow: 0 1px 0 rgba(16, 22, 51, 0.02);
+  box-shadow: 0 1px 2px rgba(16, 22, 51, 0.04);
 }
 
 .auth-field:hover {
-  border-color: #bfdbfe;
+  border-color: #cbd5e1;
 }
 
 .auth-field:focus-within {
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.08);
+  border-color: #94a3b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .auth-primary-btn {
@@ -342,9 +346,27 @@ textarea {
   }
 }
 
-:where(a, button, [role="button"], input, select, textarea):focus-visible {
+:where(a, button, [role="button"]):focus-visible {
   outline: 2px solid var(--primary-bright);
   outline-offset: 2px;
+}
+
+input,
+select,
+textarea,
+.auth-input,
+.form-input {
+  outline: none !important;
+}
+
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
 }
 
 ::selection {
@@ -843,7 +865,7 @@ button.bg-primary:disabled {
   position: relative;
 }
 
-:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main > .ui-card {
+.customer-portal-theme main > .ui-card {
   overflow: hidden;
   border-color: rgba(191, 219, 254, 0.88);
   background:
@@ -854,7 +876,7 @@ button.bg-primary:disabled {
   -webkit-backdrop-filter: blur(16px);
 }
 
-:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) main > .ui-card::before {
+.customer-portal-theme main > .ui-card::before {
   content: "";
   pointer-events: none;
   position: absolute;
@@ -941,16 +963,22 @@ button.bg-primary:disabled {
 :is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) select,
 :is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) textarea,
 :is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .form-input {
-  border-color: rgba(191, 219, 254, 0.86);
-  background-color: rgba(255, 255, 255, 0.92);
+  border-color: #cbd5e1;
+  background-color: rgba(255, 255, 255, 0.95);
+  outline: none !important;
 }
 
 :is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) input:focus,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) input:focus-visible,
 :is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) select:focus,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) select:focus-visible,
 :is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) textarea:focus,
-:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .form-input:focus {
-  border-color: var(--primary-bright);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) textarea:focus-visible,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .form-input:focus,
+:is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) .form-input:focus-visible {
+  border-color: #94a3b8;
+  outline: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 :is(.owner-dashboard-theme, .customer-portal-theme, .admin-portal-theme) table {
@@ -1003,11 +1031,12 @@ button.bg-primary:disabled {
   background: transparent;
 }
 
-.admin-portal-theme main > .ui-card {
+:is(.owner-dashboard-theme, .admin-portal-theme) main > .ui-card {
   border: 0;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
+  padding: 0;
 }
 
 .admin-portal-theme .admin-panel,
@@ -1024,4 +1053,3 @@ button.bg-primary:disabled {
   border-color: rgba(147, 197, 253, 0.95);
   box-shadow: 0 18px 42px rgba(37, 99, 235, 0.11);
 }
-

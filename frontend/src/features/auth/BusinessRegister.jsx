@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { registerBusinessWithEmail, requestBusinessEmailOtp, verifyBusinessEmailOtp } from "../../services/authApi.js";
 import { AuthAlert, AuthField, AuthFooterLinks, AuthLayout, AuthStepper, AuthSubmit } from "./AuthLayout.jsx";
+import { PasswordInput } from "./PasswordInput.jsx";
 import { getApiErrorMessage } from "../../services/apiError.js";
 
 const schema = Joi.object({
@@ -238,7 +239,7 @@ export function BusinessRegister() {
                   <input id="businessName" {...form.register("businessName")} className="auth-input" placeholder="Your business name" autoComplete="organization" />
                 </AuthField>
             <AuthField icon={<LockKeyhole size={17} />} label="Password" htmlFor="password" error={form.formState.errors.password?.message}>
-              <input id="password" {...form.register("password")} type="password" className="auth-input" placeholder="Minimum 8 characters" autoComplete="new-password" aria-invalid={Boolean(form.formState.errors.password)} />
+              <PasswordInput id="password" register={form.register} field="password" error={form.formState.errors.password} autoComplete="new-password" />
             </AuthField>
             <AuthSubmit type="button" onClick={form.handleSubmit(submit)} isSubmitting={form.formState.isSubmitting}>
               Create account

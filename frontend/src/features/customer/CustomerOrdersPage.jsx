@@ -7,7 +7,7 @@ import { Toast } from "../../components/ui/motion.jsx";
 import { getCustomerTransactions, reorderCustomerTransaction } from "../../services/customerPortalApi.js";
 import { formatTransactionType } from "../../utils/transaction.js";
 import { getApiErrorMessage } from "../../services/apiError.js";
-import { ListSkeleton, OrderStatusPill, PageBanner, SHOP_IMAGES, ShowMore, WarmEmptyState, journeyStage, needsAttention } from "./shopUi.jsx";
+import { ListSkeleton, OrderStatusPill, PageBanner, PageSurface, SHOP_IMAGES, ShowMore, WarmEmptyState, journeyStage, needsAttention } from "./shopUi.jsx";
 
 // The server is asked for a generous window once, then the page reveals it in steps. Fetching
 // page-by-page instead would mean the list grows under the reader and the scroll position jumps
@@ -72,7 +72,7 @@ const [showAllOrders, setShowAllOrders] = useState(false);
   const visibleOrders = showAllOrders ? sortedOrders : sortedOrders.slice(0, ORDER_PAGE_SIZE);
 
   return (
-    <section className="space-y-6">
+    <PageSurface className="space-y-6">
       {/* Copy is written for the two people who land here: someone with history, and someone
           who has just signed up. "0 orders found" served neither — to a newcomer it reads as
           the platform failing to find their orders, which is both deflating and untrue. */}
@@ -98,7 +98,7 @@ const [showAllOrders, setShowAllOrders] = useState(false);
           alternative was scrolling a table hunting for one cell. Plain card, no wash behind it —
           this sits directly above a list of twenty rows and anything decorative here is noise. */}
       {!isLoading && orders.length ? (
-        <section className="rounded-2xl border border-line bg-gradient-to-br from-white to-brand-50/60 p-5 shadow-card">
+        <section className="rounded-2xl border border-white/70 bg-white/85 p-5 shadow-card backdrop-blur-[2px]">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-ink">
@@ -154,7 +154,7 @@ const [showAllOrders, setShowAllOrders] = useState(false);
             <>
               <div className="grid gap-3 lg:hidden">
                 {visibleOrders.map((order) => (
-                  <article key={order.id} className="rounded-xl border border-line bg-white p-4 shadow-card transition duration-300 hover:-translate-y-0.5 hover:shadow-lift">
+                  <article key={order.id} className="rounded-xl border border-white/70 bg-white/90 p-4 shadow-card backdrop-blur-[2px] transition duration-300 hover:-translate-y-0.5 hover:shadow-lift">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <Link className="font-bold text-ink hover:text-brand" to={`/customer/orders/${order.id}`}>{order.transactionNumber}</Link>
@@ -192,9 +192,9 @@ const [showAllOrders, setShowAllOrders] = useState(false);
                 ))}
               </div>
 
-              <div className="hidden overflow-x-auto rounded-xl border border-line bg-white shadow-card lg:block">
+              <div className="hidden overflow-x-auto rounded-xl border border-white/70 bg-white/90 shadow-card backdrop-blur-[2px] lg:block">
                 <table className="min-w-full divide-y divide-line text-sm">
-                  <thead className="bg-surface">
+                  <thead className="bg-surface/80">
                     <tr>
                       <th className="px-4 py-3 text-left font-semibold text-ink">Order</th>
                       <th className="px-4 py-3 text-left font-semibold text-ink">Type</th>
@@ -204,7 +204,7 @@ const [showAllOrders, setShowAllOrders] = useState(false);
                       <th className="px-4 py-3 text-left font-semibold text-ink">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-line bg-white">
+                  <tbody className="divide-y divide-line-soft bg-transparent">
                     {visibleOrders.map((order) => (
                       <tr key={order.id} className="transition hover:bg-surface">
                         <td className="px-4 py-3">
@@ -270,6 +270,6 @@ const [showAllOrders, setShowAllOrders] = useState(false);
       {/* Reordering used to insert a banner above the list, pushing every row the shopper
           was reading down the page. It floats now, and clears itself. */}
       <Toast message={message} onDismiss={() => setMessage("")} />
-    </section>
+    </PageSurface>
   );
 }

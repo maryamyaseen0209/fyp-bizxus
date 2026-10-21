@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCustomer } from "../../context/CustomerContext.jsx";
 import { getCustomerMe, registerCustomer, requestCustomerEmailOtp, verifyCustomerEmailOtp } from "../../services/customerAuthApi.js";
 import { AuthAlert, AuthField, AuthFooterLinks, AuthLayout, AuthStepper, AuthSubmit } from "../auth/AuthLayout.jsx";
+import { PasswordInput } from "../auth/PasswordInput.jsx";
 import { getApiErrorMessage } from "../../services/apiError.js";
 
 const schema = Joi.object({
@@ -235,7 +236,7 @@ export function CustomerRegister() {
               <input id="fullName" {...form.register("fullName")} className="auth-input" placeholder="Ahsan Jamil" autoComplete="name" aria-invalid={Boolean(form.formState.errors.fullName)} />
             </AuthField>
             <AuthField icon={<LockKeyhole size={17} />} label="Password" htmlFor="password" error={form.formState.errors.password?.message}>
-              <input id="password" {...form.register("password")} type="password" className="auth-input" placeholder="Minimum 8 characters" autoComplete="new-password" aria-invalid={Boolean(form.formState.errors.password)} />
+              <PasswordInput id="password" register={form.register} field="password" error={form.formState.errors.password} autoComplete="new-password" />
             </AuthField>
             <AuthSubmit type="button" onClick={form.handleSubmit(submit)} isSubmitting={form.formState.isSubmitting}>
               Create account

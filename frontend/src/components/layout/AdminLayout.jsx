@@ -1,10 +1,17 @@
 import { Boxes, CreditCard, FileText, LayoutDashboard, LogOut, ShieldCheck, SquareStack, Tags, Users } from "lucide-react";
 import { Shell } from "./Shell.jsx";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext.jsx";
 import { logoutBusiness } from "../../services/authApi.js";
+
+const ADMIN_IMAGES = [
+  "https://ik.imagekit.io/fac14ggkmb/images%20(2).jpg?updatedAt=1790834145777",
+  "https://ik.imagekit.io/fac14ggkmb/images%20(1).jpg?updatedAt=1790834145767",
+  "https://ik.imagekit.io/fac14ggkmb/images.jpg?updatedAt=1790834145171",
+  "https://ik.imagekit.io/fac14ggkmb/business-blur-background-photo.jpeg?updatedAt=1790832679001"
+];
 
 const navItems = [
   { to: "/admin", label: "Platform Overview", end: true, icon: LayoutDashboard, section: "Operations" },
@@ -26,6 +33,10 @@ const navSections = [
 export function AdminLayout() {
   const navigate = useNavigate();
   const { clearSession, refreshSession, user } = useAuth();
+
+  const bgImage = useMemo(() => {
+    return ADMIN_IMAGES[Math.floor(Math.random() * ADMIN_IMAGES.length)];
+  }, []);
 
   useEffect(() => {
     refreshSession().catch(() => {});
@@ -97,7 +108,7 @@ export function AdminLayout() {
       navSections={navSections}
       asideFooter={asideFooter}
       headerActions={headerActions}
-      focusModeToggle={false}
+      backgroundImage={bgImage}
     />
   );
 }

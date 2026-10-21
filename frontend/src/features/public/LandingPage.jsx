@@ -7,7 +7,6 @@ import {
   Lock,
   Package,
   ShieldCheck,
-  Sparkles,
   Store,
   Wallet,
   X,
@@ -171,7 +170,6 @@ export function LandingPage() {
               {/* One eyebrow. Previously this band also carried a 5-step pipeline strip
                   that duplicated the "How it works" section further down the page. */}
               <div className="landing-eyebrow landing-eyebrow-dark inline-flex items-center gap-2">
-                <Sparkles size={13} className="text-sky-300" />
                 Built for Pakistani businesses
               </div>
 

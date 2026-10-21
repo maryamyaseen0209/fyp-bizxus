@@ -1,8 +1,8 @@
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, History, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Download, FileSpreadsheet, History, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-import { Alert, Card, PageHeader, StatCard } from "../../components/ui/index.jsx";
+import { Alert, Card, StatCard } from "../../components/ui/index.jsx";
+import { BusinessSetupRequired, OWNER_IMAGES, OwnerHero } from "../dashboard/ownerUi.jsx";
 import { useTenant } from "../../context/TenantContext.jsx";
 import {
   confirmOrderImport,
@@ -44,6 +44,7 @@ export function OrderImportPage() {
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showColumnGuide, setShowColumnGuide] = useState(false);
 
   const loadHistory = useCallback(async () => {
     if (!selectedTenant?.id) return;
@@ -122,13 +123,18 @@ export function OrderImportPage() {
 
   if (!selectedTenant) {
     return (
-      <section className="space-y-4">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Import orders</h1>
-        <p className="text-sm text-muted">Create a business before importing orders.</p>
-        <Link className="ui-btn-primary" to="/dashboard/business">
-          Create business
-        </Link>
-      </section>
+      <BusinessSetupRequired
+        feature="Order Migration & Import"
+        description="Import past order history, spreadsheets, and legacy sales records directly into your BizXus dashboard."
+        icon={Upload}
+        image={OWNER_IMAGES.importOrders}
+        previewTitle="Bulk Order Migration Tools"
+        previewItems={[
+          { title: "CSV & Excel Spreadsheet Import", desc: "Upload order files from Shopify, WooCommerce, or custom ERP systems." },
+          { title: "Auto Customer & Product Matching", desc: "Automatically link customer names and products or create them on the fly." },
+          { title: "Batch Status Validation", desc: "Review parsed data and preview revenue totals before finalizing the import." },
+        ]}
+      />
     );
   }
 
@@ -136,13 +142,20 @@ export function OrderImportPage() {
 
   return (
     <section className="space-y-6">
-      <PageHeader
-        eyebrow="Orders"
-        title="Import previous orders"
-        icon={FileSpreadsheet}
-        description="Bring your old sales sheet into BizXusAI so all your history lives in one place. Imported orders show up in your normal order list, reports and customer history, tagged as imported."
+      <OwnerHero
+        eyebrow="Order Migration"
+        title="Import historical orders"
+        description="Upload an existing spreadsheet (.xlsx, .csv) of past sales to merge into your live orders, reports, and customer profiles without manual re-entry."
+        image={OWNER_IMAGES.importOrders}
+        stats={[
+          { label: "Supported Formats", value: ".XLSX, .CSV" },
+          { label: "Past Imports", value: history.length },
+        ]}
         actions={
-          <Link to="/dashboard/transactions?source=imported" className="ui-btn-secondary">
+          <Link
+            to="/dashboard/transactions?source=imported"
+            className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-white/20 active:scale-95"
+          >
             View imported orders
           </Link>
         }
@@ -151,25 +164,49 @@ export function OrderImportPage() {
       {message ? <Alert tone="green">{message}</Alert> : null}
       {error ? <Alert tone="red">{error}</Alert> : null}
 
-      <Card>
-        <h2 className="text-base font-bold text-ink">Columns we can read</h2>
-        <p className="mt-1 text-sm text-muted">
-          Put the column names in the first row. Spelling is flexible - each name below also accepts the alternatives shown. Anything we cannot
-          recognise is listed back to you after the upload rather than being guessed at.
-        </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {columns.map((column) => (
-            <div key={column.key} className="rounded-xl border border-line bg-surface px-3 py-2">
-              <div className="text-sm font-bold text-ink">{column.label}</div>
-              <div className="mt-0.5 truncate text-[11px] text-muted">also: {column.examples.join(", ")}</div>
+      {/* Collapsible Format Guide */}
+      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        <button
+          type="button"
+          onClick={() => setShowColumnGuide((v) => !v)}
+          className="flex w-full items-center justify-between px-5 py-4 sm:px-6 sm:py-5 text-left transition hover:bg-surface/50"
+        >
+          <div className="flex items-center gap-3.5 sm:gap-4">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-brand">
+              <FileSpreadsheet size={20} />
             </div>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-muted">
-          One row per item. Repeat the same order number on several rows and they become one order with several lines. Supported files:
-          .xlsx, .xlsm and .csv — if yours is an old .xls, open it in Excel and save it as .xlsx first.
-        </p>
-      </Card>
+            <div>
+              <h2 className="text-sm font-bold text-ink">Spreadsheet Format & Column Guide</h2>
+              <p className="text-xs text-muted">
+                {showColumnGuide ? "Hide supported columns and file guidelines" : "Click to view readable column headers and Excel formatting tips"}
+              </p>
+            </div>
+          </div>
+          <div className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink">
+            <span>{showColumnGuide ? "Hide Guide" : "View Supported Columns"}</span>
+            {showColumnGuide ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </div>
+        </button>
+
+        {showColumnGuide ? (
+          <div className="border-t border-line bg-slate-50/40 px-5 py-5 sm:px-6 sm:py-6">
+            <p className="text-xs leading-relaxed text-muted">
+              Put the column names in the first row. Spelling is flexible — each name below also accepts the alternatives shown. Anything we cannot recognise is listed back to you after the upload rather than being guessed at.
+            </p>
+            <div className="mt-3.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {columns.map((column) => (
+                <div key={column.key} className="rounded-xl border border-line bg-white px-3 py-2 shadow-xs">
+                  <div className="text-xs font-bold text-ink">{column.label}</div>
+                  <div className="mt-0.5 truncate text-[10px] text-muted">also: {column.examples.join(", ")}</div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[11px] text-muted">
+              One row per item. Repeat the same order number on several rows to combine them into one multi-line order. Supported files: .xlsx, .xlsm, and .csv.
+            </p>
+          </div>
+        ) : null}
+      </div>
 
       <Card as="form" onSubmit={uploadForPreview} className="space-y-4">
         <h2 className="text-base font-bold text-ink">1. Upload and check</h2>

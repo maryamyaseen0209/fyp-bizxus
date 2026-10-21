@@ -37,6 +37,11 @@ whatsapp-bridge/.baileys_auth_smoketest/
 # Editor/agent workspace
 .refact/
 
+# Generated frontend artifacts
+frontend/.sell.bundle.cjs
+frontend/.sellHarness.mjs
+frontend/src.zip
+
 # OS/editor
 .DS_Store
 Thumbs.db

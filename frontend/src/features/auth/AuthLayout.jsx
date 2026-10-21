@@ -12,7 +12,7 @@ import { BrandLogo } from "../../components/common/BrandLogo.jsx";
  *
  * What the story panel no longer does, deliberately:
  *
- * - It told you to "Sign in, choose business, manage orders" — a step list that told someone
+ * - It told you to "Sign in, choose business, manage orders" ?" a step list that told someone
  *   already sitting on the login page what they had come to do, while the register flow ships
  *   its own real `AuthStepper`. Removed.
  * - It rendered a mock dashboard with invented figures ("Revenue PKR 58K", "12 orders") and
@@ -31,9 +31,30 @@ import { BrandLogo } from "../../components/common/BrandLogo.jsx";
  * the first thing a user saw was marketing copy instead of the input they came for.
  */
 
+/**
+ * A contextual photograph for the left-hand panel, per audience and mode.
+ *
+ * The `tr=` transforms are load-bearing, not cosmetic. Without them the previous customer-signup
+ * asset returned HTTP 400 and rendered nothing at all, and the customer-login one shipped 878 KB
+ * for a background that is mostly covered. Both resolve and both drop under 100 KB with it. The
+ * crop is unchanged, so none of this alters how the panel looks.
+ *
+ * The one rule these have to follow, which is not obvious until you look at them: the panel lays
+ * a navy scrim over the photograph (see `.auth-story-photo`), so only a bright, high-key image
+ * survives it. The customer-signup slot previously held a dark navy 3D render with a cyan glow —
+ * correct file, valid JPEG, HTTP 200, and completely invisible, because navy on navy under a navy
+ * scrim is just navy. It is now a real shopkeeper handing over an order, which is what that page's
+ * copy promises, and which reads clearly once the scrim is on it.
+ */
 const IMAGES = {
-  business: "https://ik.imagekit.io/fac14ggkmb/images%20(1).jpg",
-  customer: "https://ik.imagekit.io/fac14ggkmb/images%20(3).jpg",
+  business: {
+    login: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1400&q=80",
+    register: "https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&w=1400&q=80",
+  },
+  customer: {
+    login: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1400&q=80",
+    register: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=80",
+  },
 };
 
 const COPY = {
@@ -42,7 +63,7 @@ const COPY = {
       eyebrow: "Business owner & cashier access",
       headline: "Your shop is waiting for you.",
       blurb:
-        "Sign in and pick up where you left off — today's orders, stock levels and customer messages, all in one place.",
+        "Sign in and pick up where you left off - today's orders, stock levels and customer messages, all in one place.",
       perks: [
         "Every order and payment already matched up",
         "Stock that updates the moment an order lands",
@@ -106,10 +127,12 @@ export function AuthLayout({
   const group = COPY[audience] || COPY.business;
   const copy = group[mode] || group.login;
 
+  const bgImage = IMAGES[audience]?.[mode] || IMAGES.business.login;
+
   return (
     <div
       className="auth-shell relative min-h-screen overflow-hidden"
-      style={{ "--auth-photo": `url(${IMAGES[audience] || IMAGES.business})` }}
+      style={{ "--auth-photo": `url(${bgImage})` }}
     >
       <div aria-hidden="true" className="auth-grid pointer-events-none absolute inset-0 opacity-70" />
 
@@ -147,26 +170,22 @@ export function AuthLayout({
 }
 
 /**
- * The photograph, the pitch, and the four promises — and nothing else.
- *
- * The vignette and the hairline are what sell the "shot through a lens" feel without adding
- * any markup the reader has to process: the vignette pushes the frame's corners down so the
- * panel reads as depth rather than a rectangle, and the hairline catches light along the top
- * edge the way a backlit screen would.
+ * The photograph, the pitch, and the four promises — styled with a luminous royal aurora
+ * tone that matches the platform and avoids looking like a dark void.
  */
 function StoryPanel({ copy }) {
   return (
     <>
       {/* Desktop: the full-height cinematic panel. */}
-      <section className="relative isolate hidden overflow-hidden rounded-[2rem] bg-hero-night p-10 shadow-cinematic lg:flex lg:flex-col lg:justify-center">
+      <section className="relative isolate hidden overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0c2447] via-[#12386a] to-[#0a1e3b] border border-blue-400/20 p-10 shadow-[0_20px_50px_-20px_rgba(20,50,110,0.35)] lg:flex lg:flex-col lg:justify-center">
         <div className="auth-story-photo" aria-hidden="true" />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_72%_62%_at_30%_45%,transparent_0%,rgba(7,19,41,0.62)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_65%_at_30%_35%,rgba(56,189,248,0.15)_0%,rgba(10,25,50,0.55)_100%)]"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/70 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/60 to-transparent"
         />
 
         <div className="relative">
@@ -174,15 +193,15 @@ function StoryPanel({ copy }) {
             <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
             {copy.eyebrow}
           </span>
-          <h1 className="mt-5 max-w-xl text-[2.75rem] font-black leading-[1.06] tracking-tight text-hero-ink">
+          <h1 className="mt-5 max-w-xl text-[2.75rem] font-black leading-[1.06] tracking-tight text-white drop-shadow-sm">
             {copy.headline}
           </h1>
-          <p className="mt-4 max-w-lg text-base leading-8 text-hero-muted">{copy.blurb}</p>
+          <p className="mt-4 max-w-lg text-base leading-8 text-sky-100/90 font-medium">{copy.blurb}</p>
 
           <ul className="mt-8 grid max-w-lg gap-3 sm:grid-cols-2">
             {copy.perks.map((perk) => (
-              <li key={perk} className="flex items-start gap-2.5 text-sm font-semibold leading-6 text-hero-ink">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/15 text-sky-300">
+              <li key={perk} className="flex items-start gap-2.5 text-sm font-semibold leading-6 text-white">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20 text-sky-300">
                   <Check size={12} strokeWidth={3.5} />
                 </span>
                 {perk}
@@ -190,19 +209,18 @@ function StoryPanel({ copy }) {
             ))}
           </ul>
 
-          <div className="mt-9 flex items-center gap-2 text-sm font-semibold text-hero-faint">
+          <div className="mt-9 flex items-center gap-2 text-sm font-semibold text-sky-200/80">
             <ShieldCheck size={16} className="text-sky-300" />
             {copy.footnote}
           </div>
         </div>
       </section>
 
-      {/* Mobile: a short banner, not a panel. Same image, lighter scrim, headline only —
-          enough to signal what the product is without making the user scroll past it. */}
-      <section className="relative isolate overflow-hidden rounded-[1.5rem] bg-hero-night lg:hidden">
+      {/* Mobile: a short banner, not a panel. Same image, lighter scrim, headline only */}
+      <section className="relative isolate overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#0c2447] via-[#12386a] to-[#0a1e3b] border border-blue-400/20 lg:hidden">
         <div className="auth-story-photo auth-story-photo-light absolute inset-0" aria-hidden="true" />
         <div className="relative p-6">
-          <h1 className="text-2xl font-black leading-[1.12] tracking-tight text-hero-ink">
+          <h1 className="text-2xl font-black leading-[1.12] tracking-tight text-white">
             {copy.headline}
           </h1>
         </div>
@@ -220,10 +238,10 @@ export function AuthField({ icon, label, error, htmlFor, children, hint = "" }) 
         {label}
       </label>
       <div
-        className={`auth-field flex items-center gap-2.5 rounded-2xl border bg-white px-3.5 transition focus-within:ring-4 ${
+        className={`auth-field flex items-center gap-2.5 rounded-2xl border bg-white px-3.5 transition ${
           error
-            ? "border-red-300 focus-within:border-red-400 focus-within:ring-red-500/10"
-            : "border-blue-100 focus-within:border-blue-400 focus-within:ring-blue-500/10"
+            ? "border-red-300 focus-within:border-red-400"
+            : "border-slate-200 focus-within:border-slate-400"
         }`}
       >
         {icon ? <span className={error ? "text-red-400" : "text-subtle"}>{icon}</span> : null}

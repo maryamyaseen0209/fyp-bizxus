@@ -9,7 +9,7 @@ import { createCustomerTransaction, getCustomerCart, removeCartItem, updateCartI
 import { capitalize, formatTransactionLabel, formatTransactionSuccess, transactionTypeOptions } from "../../utils/transaction.js";
 import { Toast } from "../../components/ui/motion.jsx";
 import { Stagger, StaggerItem } from "../../components/ui/motion.jsx";
-import { SHOP_IMAGES, PageBanner, WarmEmptyState } from "./shopUi.jsx";
+import { SHOP_IMAGES, PageBanner, PageSurface, WarmEmptyState } from "./shopUi.jsx";
 import { getApiErrorMessage } from "../../services/apiError.js";
 
 // Three lines: enough to recognise the basket at a glance without pushing the delivery form and
@@ -205,7 +205,7 @@ export function CustomerCartPage() {
   );
 
   return (
-    <section className="space-y-4">
+    <PageSurface image={SHOP_IMAGES.cart} className="space-y-4">
       {/* One banner carrying the only two facts that matter here — how much is in the cart, and
           what it comes to. It used to be a card with a heading, a sentence and a boxed total,
           which is three boxes for two numbers. */}
@@ -282,7 +282,7 @@ return (
                footer, no reassurance paragraphs — nothing that is not either something the
                shopper chose or something they must now decide. */
             <StaggerItem key={cart.id}>
-            <section className="overflow-hidden rounded-xl border border-line bg-white shadow-card transition duration-300 hover:shadow-lift">
+            <section className="overflow-hidden rounded-xl border border-white/70 bg-white/90 shadow-card backdrop-blur-[2px] transition duration-300 hover:shadow-lift">
               <div className="flex items-baseline justify-between gap-3 border-b border-line-soft px-4 py-2.5">
                 <h2 className="truncate text-sm font-bold text-ink">{cart.tenant?.name || "Business"}</h2>
                 <span className="shrink-0 text-xs text-muted">
@@ -569,6 +569,6 @@ return (
       {/* Order confirmations float over the page. As a banner above the carts they pushed the
           whole list down at exactly the moment a shopper wants to see their new order. */}
       <Toast message={message} onDismiss={() => setMessage("")} />
-    </section>
+    </PageSurface>
   );
 }

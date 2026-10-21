@@ -1,11 +1,32 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, ClipboardCheck, PlayCircle, RefreshCw, Route, Terminal, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ClipboardCheck,
+  Copy,
+  Layers,
+  ListChecks,
+  PlayCircle,
+  RefreshCw,
+  Route,
+  ShieldAlert,
+  Sparkles,
+  Terminal,
+  XCircle,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useTenant } from "../../context/TenantContext.jsx";
 import { getFinalQaChecklist, recordFinalQaDemoRun } from "../../services/qaApi.js";
-import { SectionTitle } from "../../components/ui/SectionTitle.jsx";
 import { formatDisplayValue, withoutSecrets } from "../../utils/displaySafety.js";
+import { BusinessSetupRequired, OWNER_IMAGES, OwnerHero } from "./ownerUi.jsx";
+import { EASE } from "../../components/ui/motion.jsx";
 
 const badgeStyles = {
   pass: "border-emerald-200 bg-emerald-50 text-emerald-800",
@@ -14,18 +35,22 @@ const badgeStyles = {
 };
 
 function StatusIcon({ status }) {
-  if (status === "pass") return <CheckCircle2 className="h-5 w-5" />;
-  if (status === "fail") return <XCircle className="h-5 w-5" />;
-  return <AlertTriangle className="h-5 w-5" />;
+  if (status === "pass") return <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />;
+  if (status === "fail") return <XCircle className="h-4 w-4 text-red-600 shrink-0" />;
+  return <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />;
 }
 
 function StatusBadge({ status }) {
-  return <span className={`rounded-full border px-2 py-1 text-xs font-bold uppercase ${badgeStyles[status] || badgeStyles.warn}`}>{status}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${badgeStyles[status] || badgeStyles.warn}`}>
+      {status}
+    </span>
+  );
 }
 
 function scoreColor(status) {
-  if (status === "demo_ready") return "text-emerald-700";
-  if (status === "needs_fixes") return "text-red-700";
+  if (status === "demo_ready" || status === "pass") return "text-emerald-700";
+  if (status === "needs_fixes" || status === "fail") return "text-red-700";
   return "text-amber-700";
 }
 
@@ -36,6 +61,9 @@ export function FinalQAPage() {
   const [notes, setNotes] = useState("");
   const [reviewerName, setReviewerName] = useState("");
   const [checkedSteps, setCheckedSteps] = useState([]);
+  const [activeTab, setActiveTab] = useState("checklist"); // 'checklist' | 'script' | 'blockers' | 'signoff'
+  const [checklistFilter, setChecklistFilter] = useState("all"); // 'all' | 'pass' | 'action_needed'
+  const [copiedCmd, setCopiedCmd] = useState("");
 
   const tenantId = selectedTenant?.id;
   const qaQuery = useQuery({
@@ -65,213 +93,485 @@ export function FinalQAPage() {
   const checkedStepSet = useMemo(() => new Set(checkedSteps), [checkedSteps]);
 
   function toggleStep(step) {
-    setCheckedSteps((current) => (current.includes(step) ? current.filter((item) => item !== step) : [...current, step]));
+    setCheckedSteps((current) =>
+      current.includes(step) ? current.filter((item) => item !== step) : [...current, step],
+    );
+  }
+
+  const filteredChecks = useMemo(() => {
+    if (checklistFilter === "pass") {
+      return checks.filter((c) => c.status === "pass");
+    }
+    if (checklistFilter === "action_needed") {
+      return checks.filter((c) => c.status === "fail" || c.status === "warn");
+    }
+    return checks;
+  }, [checks, checklistFilter]);
+
+  const passCount = checks.filter((c) => c.status === "pass").length;
+  const actionCount = checks.filter((c) => c.status === "fail" || c.status === "warn").length;
+
+  function copyCommand(cmd, name) {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(name);
+    setTimeout(() => setCopiedCmd(""), 2000);
   }
 
   if (!selectedTenant) {
-    return <div className="rounded-2xl border border-line bg-white p-6 text-sm text-muted">Create or select a business first to run final QA.</div>;
+    return (
+      <BusinessSetupRequired
+        feature="System QA & Verification"
+        description="Run automated smoke tests, end-to-end integration verifications, and readiness audits for your store."
+        icon={ClipboardCheck}
+        image={OWNER_IMAGES.qa}
+        previewTitle="Verification & Audit Suite"
+        previewItems={[
+          { title: "Automated Endpoint Health", desc: "Test API latency, database connections, and background job queue." },
+          { title: "Checkout Simulation", desc: "Simulate end-to-end customer checkout and cashier POS orders." },
+          { title: "One-Click Diagnostic Report", desc: "Generate a comprehensive health report ready for production signoff." },
+        ]}
+      />
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary">
-              <ClipboardCheck className="h-4 w-4" /> Phase 30
-            </div>
-            <h1 className="mt-3 text-2xl font-bold text-ink">Final full-system QA and supervisor demo polish</h1>
-            <p className="mt-2 max-w-3xl text-sm text-muted">
-              This page is for final project testing and supervisor demo readiness, not normal daily business use. It checks whether the selected business is ready for demo by verifying profile, launch wizard, catalog, RAG, customer chatbot ordering, WhatsApp mock/real setup, stock/payments, owner assistant, reports, and phone OTP flow.
-            </p>
+    <section className="space-y-6">
+      {/* Cinematic Hero */}
+      <OwnerHero
+        eyebrow="Quality Assurance & Verification"
+        title="Full-System QA & Demo Audit"
+        description="Verify end-to-end functionality across customer chat, RAG documents, WhatsApp agent, POS orders, and payment webhooks before final evaluation."
+        image={OWNER_IMAGES.qa}
+        stats={[
+          { label: "Readiness", value: String(summary?.status || "Audit").replaceAll("_", " ") },
+          { label: "Required Score", value: `${summary?.requiredPercent ?? 0}%` },
+          { label: "Overall Passing", value: `${summary?.percent ?? 0}%` },
+        ]}
+        actions={
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => qaQuery.refetch()}
+              disabled={qaQuery.isFetching}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-hero-work shadow-[0_14px_30px_-12px_rgba(3,10,26,0.7)] transition hover:bg-sky-50 active:scale-95"
+            >
+              <RefreshCw size={14} className={qaQuery.isFetching ? "animate-spin text-brand" : "text-brand"} />
+              <span>{qaQuery.isFetching ? "Running Audit..." : "Refresh Audit"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("signoff")}
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-white/20 active:scale-95"
+            >
+              <PlayCircle size={14} />
+              <span>Record Trial Run</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => qaQuery.refetch()}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-line px-4 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-          >
-            <RefreshCw className="h-4 w-4" /> Refresh QA
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {qaQuery.isLoading ? (
-        <div className="rounded-2xl border border-line bg-white p-6 text-sm text-muted">Running final QA checklist...</div>
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-white py-12 text-sm text-muted shadow-card">
+          <RefreshCw size={18} className="animate-spin text-brand" />
+          <span>Executing system QA test suite...</span>
+        </div>
       ) : qaQuery.isError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">Could not load final QA checklist. Make sure the backend is running and you are logged in as the owner.</div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-card">
+          Could not load final QA checklist. Make sure the backend server is running and you are logged in.
+        </div>
       ) : (
         <>
-          <div className="grid gap-4 lg:grid-cols-4">
-            <div className="rounded-2xl border border-line bg-white p-5 shadow-card lg:col-span-1">
-              <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-subtle">Demo readiness</div>
-              <div className="mt-1 text-xs text-muted">PASS = working, WARN = usable but needs attention, FAIL = must fix before demo.</div>
-              <div className={`mt-2 text-2xl font-bold capitalize ${scoreColor(summary?.status)}`}>{String(summary?.status || "loading").replaceAll("_", " ")}</div>
-              <div className="mt-2 text-sm text-muted">Required: {summary?.requiredPercent ?? 0}% · Overall: {summary?.percent ?? 0}%</div>
-            </div>
-            {Object.entries(summary?.totals || {}).map(([key, value]) => (
-              <div key={key} className="rounded-2xl border border-line bg-white p-5 shadow-card">
-                <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-subtle">{key}</div>
-                <div className="mt-2 text-3xl font-bold text-ink">{value}</div>
-              </div>
-            ))}
-          </div>
+          {/* Navigation Tabs */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-3.5 shadow-card">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("checklist")}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  activeTab === "checklist" ? "bg-brand text-white shadow-sm" : "bg-surface text-ink hover:bg-slate-100"
+                }`}
+              >
+                <ListChecks size={13} />
+                <span>QA Checklist</span>
+                <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${activeTab === "checklist" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+                  {checks.length}
+                </span>
+              </button>
 
-          {blockingGaps.length || warnings.length ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-                <h2 className="font-bold text-red-800">Blocking gaps</h2>
-                {blockingGaps.length ? (
-                  <ul className="mt-3 space-y-2 text-sm text-red-700">
-                    {blockingGaps.map((gap) => <li key={gap.code}>• {gap.title}: {gap.description}</li>)}
-                  </ul>
-                ) : <p className="mt-3 text-sm text-red-700">No blocking gaps detected.</p>}
-              </div>
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                <h2 className="font-bold text-amber-800">Warnings</h2>
-                <p className="mt-1 text-xs text-amber-700">Warnings usually mean the project can demo, but you should improve that area before final submission.</p>
-                {warnings.length ? (
-                  <ul className="mt-3 space-y-2 text-sm text-amber-700">
-                    {warnings.slice(0, 6).map((warning) => <li key={warning.code}>• {warning.title}: {warning.description}</li>)}
-                  </ul>
-                ) : <p className="mt-3 text-sm text-amber-700">No warnings detected.</p>}
-              </div>
-            </div>
-          ) : null}
+              <button
+                type="button"
+                onClick={() => setActiveTab("script")}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  activeTab === "script" ? "bg-brand text-white shadow-sm" : "bg-surface text-ink hover:bg-slate-100"
+                }`}
+              >
+                <Route size={13} />
+                <span>Demo Walkthrough Script</span>
+                <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${activeTab === "script" ? "bg-white/20 text-white" : "bg-blue-100 text-brand"}`}>
+                  {checkedSteps.length}/{demoScript.length}
+                </span>
+              </button>
 
-          {nextActions.length ? (
-            <div className="rounded-2xl border border-brand-200 bg-brand-50 p-5">
-              <h2 className="font-bold text-brand-900">Recommended next actions</h2>
-              <div className="mt-3 grid gap-2">
-                {nextActions.map((action) => (
-                  <div key={action.code} className="rounded-xl bg-white/70 p-3 text-sm text-brand-900">
-                    <div className="font-semibold">{action.title}</div>
-                    <div className="mt-1 text-brand-800">{action.action}</div>
-                    {action.route ? <div className="mt-1 text-xs font-bold uppercase tracking-wide text-brand-700">{action.route}</div> : null}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
+              <button
+                type="button"
+                onClick={() => setActiveTab("blockers")}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  activeTab === "blockers" ? "bg-amber-500 text-white shadow-sm" : "bg-surface text-ink hover:bg-slate-100"
+                }`}
+              >
+                <AlertTriangle size={13} />
+                <span>Gaps & Recommendations</span>
+                {blockingGaps.length + warnings.length > 0 ? (
+                  <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${activeTab === "blockers" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800 font-extrabold"}`}>
+                    {blockingGaps.length + warnings.length}
+                  </span>
+                ) : null}
+              </button>
 
-          <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-            <SectionTitle>System QA checklist</SectionTitle>
-            <div className="mt-4 grid gap-3">
-              {checks.map((check) => (
-                <div key={check.code} className={`rounded-xl border p-4 ${badgeStyles[check.status] || badgeStyles.warn}`}>
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="flex items-start gap-3">
-                      <StatusIcon status={check.status} />
-                      <div>
-                        <div className="font-semibold">{check.title}</div>
-                        <div className="mt-1 text-sm opacity-90">{check.description}</div>
-                        {check.route ? <div className="mt-2 text-xs font-semibold">Fix/Test route: {check.route}</div> : null}
-                        {Object.keys(check.evidence || {}).length ? (
-                          <div className="mt-2 grid gap-1 text-xs opacity-90 md:grid-cols-2">
-                            {Object.entries(withoutSecrets(check.evidence)).slice(0, 6).map(([key, value]) => (
-                              <div key={key}>
-                                <span className="font-semibold">{key}:</span> {formatDisplayValue(value)}
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                    <StatusBadge status={check.status} />
-                  </div>
-                </div>
-              ))}
+              <button
+                type="button"
+                onClick={() => setActiveTab("signoff")}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  activeTab === "signoff" ? "bg-brand text-white shadow-sm" : "bg-surface text-ink hover:bg-slate-100"
+                }`}
+              >
+                <PlayCircle size={13} />
+                <span>Record Run & Terminal</span>
+              </button>
+            </div>
+
+            <div className="text-xs text-muted">
+              <span>Readiness: </span>
+              <strong className={`capitalize ${scoreColor(summary?.status)}`}>
+                {String(summary?.status || "Audit").replaceAll("_", " ")}
+              </strong>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-            <div className="flex items-center gap-2">
-              <Route className="h-5 w-5 text-primary" />
-              <SectionTitle>Supervisor demo script</SectionTitle>
-            </div>
-            <div className="mt-4 grid gap-3">
-              {demoScript.map((step) => (
-                <label key={step.step} className="flex cursor-pointer gap-3 rounded-xl border border-line p-4 transition hover:bg-surface">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4"
-                    checked={checkedStepSet.has(step.step)}
-                    onChange={() => toggleStep(step.step)}
-                  />
-                  <div>
-                    <div className="text-sm font-bold text-ink">Step {step.step}: {step.title}</div>
-                    <div className="mt-1 text-sm text-muted">{step.goal}</div>
-                    <div className="mt-2 text-xs font-semibold text-primary">{step.route}</div>
-                    <div className="mt-1 text-xs text-muted">Expected: {step.expectedResult}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-              <div className="flex items-center gap-2">
-                <Terminal className="h-5 w-5 text-primary" />
-                <SectionTitle>Final verification commands</SectionTitle>
-              </div>
-              <div className="mt-4 space-y-3">
-                {commands.map((item) => (
-                  <div key={item.name} className="rounded-xl bg-surface p-4">
-                    <div className="font-semibold text-ink">{item.name}</div>
-                    <code className="mt-2 block overflow-x-auto rounded-xl bg-ink px-3 py-2 text-xs text-white">{item.command}</code>
-                    <p className="mt-2 text-xs text-muted">{item.purpose}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-              <div className="flex items-center gap-2">
-                <PlayCircle className="h-5 w-5 text-primary" />
-                <SectionTitle>Record manual demo run</SectionTitle>
-              </div>
-              {report?.latestDemoRun ? (
-                <div className="mt-4 rounded-xl bg-surface p-3 text-sm text-muted">
-                  Last run: <span className="font-semibold text-ink">{report.latestDemoRun.result}</span> by {report.latestDemoRun.reviewerName || "Unknown"}
-                  {report.latestDemoRun.demoCoverage ? (
-                    <div className="mt-1 text-xs">
-                      Demo script coverage: {report.latestDemoRun.demoCoverage.checkedCount}/{report.latestDemoRun.demoCoverage.totalSteps} steps ({report.latestDemoRun.demoCoverage.percent}%)
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              <div className="mt-4 space-y-3">
-                <label className="block text-sm font-semibold text-ink">
-                  Result
-                  <select value={result} onChange={(event) => setResult(event.target.value)} className="mt-1 w-full rounded-xl border border-line px-3 py-2 text-sm">
-                    <option value="pass">Pass</option>
-                    <option value="warn">Pass with warnings</option>
-                    <option value="fail">Fail / needs fixes</option>
-                  </select>
-                </label>
-                <label className="block text-sm font-semibold text-ink">
-                  Reviewer name
-                  <input value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} className="mt-1 w-full rounded-xl border border-line px-3 py-2 text-sm" placeholder="Ahsan / Supervisor / Tester" />
-                </label>
-                <label className="block text-sm font-semibold text-ink">
-                  Notes
-                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-1 min-h-28 w-full rounded-xl border border-line px-3 py-2 text-sm" placeholder="Write what was tested and any remaining fixes..." />
-                </label>
+          {/* Tab 1: System QA Checklist */}
+          {activeTab === "checklist" ? (
+            <div className="space-y-4">
+              {/* Filter Pills */}
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  disabled={recordMutation.isPending}
-                  onClick={() => recordMutation.mutate()}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
+                  onClick={() => setChecklistFilter("all")}
+                  className={`rounded-xl px-3 py-1 text-xs font-bold ${
+                    checklistFilter === "all" ? "bg-ink text-white" : "bg-surface text-muted hover:bg-slate-200"
+                  }`}
                 >
-                  <ClipboardCheck className="h-4 w-4" /> {recordMutation.isPending ? "Saving..." : "Save demo QA run"}
+                  All ({checks.length})
                 </button>
-                {recordMutation.isError ? <div className="text-sm text-red-600">Could not save demo run.</div> : null}
-                {recordMutation.isSuccess ? <div className="text-sm text-emerald-700">Demo QA run saved.</div> : null}
+                <button
+                  type="button"
+                  onClick={() => setChecklistFilter("pass")}
+                  className={`rounded-xl px-3 py-1 text-xs font-bold ${
+                    checklistFilter === "pass" ? "bg-emerald-600 text-white" : "bg-surface text-muted hover:bg-slate-200"
+                  }`}
+                >
+                  Passing ({passCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChecklistFilter("action_needed")}
+                  className={`rounded-xl px-3 py-1 text-xs font-bold ${
+                    checklistFilter === "action_needed" ? "bg-amber-500 text-white" : "bg-surface text-muted hover:bg-slate-200"
+                  }`}
+                >
+                  Needs Attention ({actionCount})
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {filteredChecks.map((check) => (
+                    <motion.article
+                      key={check.code}
+                      layout
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.25, ease: EASE }}
+                      className={`rounded-2xl border p-4.5 sm:p-5 shadow-card transition ${
+                        badgeStyles[check.status] || badgeStyles.warn
+                      }`}
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                          <div className="mt-0.5">
+                            <StatusIcon status={check.status} />
+                          </div>
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-sm font-bold text-ink">{check.title}</h3>
+                              <StatusBadge status={check.status} />
+                            </div>
+                            <p className="text-xs leading-relaxed opacity-90">{check.description}</p>
+
+                            {check.route ? (
+                              <div className="pt-1.5">
+                                <Link
+                                  to={check.route}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1 text-xs font-bold text-ink ring-1 ring-line hover:bg-white"
+                                >
+                                  <span>Test / Configure in {check.route}</span>
+                                  <ArrowRight size={11} className="text-brand" />
+                                </Link>
+                              </div>
+                            ) : null}
+
+                            {Object.keys(check.evidence || {}).length ? (
+                              <div className="mt-2.5 rounded-xl bg-white/60 p-2.5 text-[11px] opacity-90">
+                                <div className="grid gap-1 md:grid-cols-2">
+                                  {Object.entries(withoutSecrets(check.evidence)).slice(0, 4).map(([key, value]) => (
+                                    <div key={key} className="truncate">
+                                      <span className="font-bold">{key}:</span> {formatDisplayValue(value)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.article>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
-          </div>
+          ) : null}
+
+          {/* Tab 2: Demo Script */}
+          {activeTab === "script" ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-ink">Supervisor Demo Walkthrough Script</h3>
+                    <p className="mt-0.5 text-xs text-muted">
+                      Follow these sequential steps during project presentation. Check each step off as it completes.
+                    </p>
+                  </div>
+                  <div className="text-xs font-bold text-brand">
+                    {checkedSteps.length} of {demoScript.length} steps completed
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {demoScript.map((step) => {
+                    const isChecked = checkedStepSet.has(step.step);
+                    return (
+                      <label
+                        key={step.step}
+                        className={`flex cursor-pointer gap-3.5 rounded-2xl border p-4 transition ${
+                          isChecked ? "border-emerald-200 bg-emerald-50/40" : "border-line bg-surface hover:bg-white"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-4 w-4 shrink-0 rounded text-brand focus:ring-brand"
+                          checked={isChecked}
+                          onChange={() => toggleStep(step.step)}
+                        />
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-ink">
+                              Step {step.step}: {step.title}
+                            </span>
+                            {step.route ? (
+                              <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-semibold text-brand ring-1 ring-line">
+                                {step.route}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-xs text-muted">{step.goal}</p>
+                          <div className="mt-1 text-[11px] font-medium text-subtle">
+                            Expected result: <span className="text-ink">{step.expectedResult}</span>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Tab 3: Gaps & Next Actions */}
+          {activeTab === "blockers" ? (
+            <div className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Blocking Gaps */}
+                <div className="rounded-2xl border border-red-200 bg-red-50/50 p-5 shadow-card">
+                  <div className="flex items-center gap-2 text-sm font-bold text-red-900">
+                    <ShieldAlert size={16} className="text-red-600" />
+                    <span>Blocking Gaps ({blockingGaps.length})</span>
+                  </div>
+                  <p className="mt-1 text-xs text-red-700">These items must be satisfied before final submission.</p>
+
+                  <div className="mt-4 space-y-2.5">
+                    {blockingGaps.length ? (
+                      blockingGaps.map((gap) => (
+                        <div key={gap.code} className="rounded-xl border border-red-200 bg-white p-3 text-xs">
+                          <div className="font-bold text-red-900">{gap.title}</div>
+                          <div className="mt-1 text-muted">{gap.description}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                        <CheckCircle2 size={14} />
+                        <span>No blocking gaps detected. System is ready!</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Warnings */}
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 shadow-card">
+                  <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                    <AlertTriangle size={16} className="text-amber-600" />
+                    <span>Warnings & Non-Blocking Items ({warnings.length})</span>
+                  </div>
+                  <p className="mt-1 text-xs text-amber-700">Features are usable, but can be improved.</p>
+
+                  <div className="mt-4 space-y-2.5">
+                    {warnings.length ? (
+                      warnings.slice(0, 6).map((warning) => (
+                        <div key={warning.code} className="rounded-xl border border-amber-200 bg-white p-3 text-xs">
+                          <div className="font-bold text-amber-900">{warning.title}</div>
+                          <div className="mt-1 text-muted">{warning.description}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                        <CheckCircle2 size={14} />
+                        <span>No warnings detected.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Recommended Next Actions */}
+              {nextActions.length ? (
+                <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
+                  <div className="flex items-center gap-2 text-sm font-bold text-ink">
+                    <Sparkles size={16} className="text-brand" />
+                    <span>Recommended Next Actions</span>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {nextActions.map((action) => (
+                      <div key={action.code} className="flex flex-col justify-between rounded-xl border border-line bg-surface p-3.5">
+                        <div>
+                          <div className="font-bold text-xs text-ink">{action.title}</div>
+                          <div className="mt-1 text-xs text-muted">{action.action}</div>
+                        </div>
+                        {action.route ? (
+                          <Link to={action.route} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand hover:underline">
+                            <span>Open route</span>
+                            <ArrowRight size={12} />
+                          </Link>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Tab 4: Record Demo Sign-off & Terminal */}
+          {activeTab === "signoff" ? (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Record Demo Run Form */}
+              <div className="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+                <div className="flex items-center gap-2 text-sm font-bold text-ink">
+                  <PlayCircle size={16} className="text-brand" />
+                  <span>Record Evaluator Demo Run</span>
+                </div>
+                <p className="mt-1 text-xs text-muted">Log the outcome of a supervisor or examiner demonstration.</p>
+
+                {report?.latestDemoRun ? (
+                  <div className="mt-3 rounded-xl bg-surface p-3 text-xs text-muted">
+                    Last recorded run: <strong className="text-ink">{report.latestDemoRun.result}</strong> by {report.latestDemoRun.reviewerName || "Unknown"}
+                    {report.latestDemoRun.demoCoverage ? (
+                      <span className="block mt-0.5 text-subtle">
+                        Coverage: {report.latestDemoRun.demoCoverage.checkedCount}/{report.latestDemoRun.demoCoverage.totalSteps} steps ({report.latestDemoRun.demoCoverage.percent}%)
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="mt-4 space-y-3.5">
+                  <label className="block text-xs font-bold text-ink">
+                    Result
+                    <select value={result} onChange={(event) => setResult(event.target.value)} className="form-input mt-1 text-xs">
+                      <option value="pass">Pass</option>
+                      <option value="warn">Pass with warnings</option>
+                      <option value="fail">Fail / needs fixes</option>
+                    </select>
+                  </label>
+
+                  <label className="block text-xs font-bold text-ink">
+                    Reviewer Name
+                    <input value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} className="form-input mt-1 text-xs" placeholder="e.g. Supervisor / Evaluator" />
+                  </label>
+
+                  <label className="block text-xs font-bold text-ink">
+                    Notes & Observations
+                    <textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="form-input mt-1 min-h-24 text-xs" placeholder="Write feedback, tested edge cases, or remaining items..." />
+                  </label>
+
+                  <button
+                    type="button"
+                    disabled={recordMutation.isPending}
+                    onClick={() => recordMutation.mutate()}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-95 disabled:opacity-60"
+                  >
+                    <ClipboardCheck size={14} />
+                    <span>{recordMutation.isPending ? "Saving..." : "Save Demo QA Run"}</span>
+                  </button>
+
+                  {recordMutation.isError ? <div className="text-xs text-red-600">Could not save demo run.</div> : null}
+                  {recordMutation.isSuccess ? <div className="text-xs text-emerald-700 font-bold">Demo QA run saved successfully!</div> : null}
+                </div>
+              </div>
+
+              {/* Terminal Verification Commands */}
+              <div className="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+                <div className="flex items-center gap-2 text-sm font-bold text-ink">
+                  <Terminal size={16} className="text-brand" />
+                  <span>Terminal Verification Commands</span>
+                </div>
+                <p className="mt-1 text-xs text-muted">CLI scripts to run automated test harnesses and lint checks.</p>
+
+                <div className="mt-4 space-y-3">
+                  {commands.map((item) => (
+                    <div key={item.name} className="rounded-xl border border-line bg-surface p-3.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-ink">{item.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyCommand(item.command, item.name)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-brand hover:underline"
+                        >
+                          {copiedCmd === item.name ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                          <span>{copiedCmd === item.name ? "Copied" : "Copy"}</span>
+                        </button>
+                      </div>
+                      <code className="mt-2 block overflow-x-auto rounded-lg bg-slate-900 p-2.5 text-[11px] font-mono text-sky-300">
+                        {item.command}
+                      </code>
+                      <p className="mt-1.5 text-[11px] text-muted">{item.purpose}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </>
       )}
-    </div>
+    </section>
   );
 }
+

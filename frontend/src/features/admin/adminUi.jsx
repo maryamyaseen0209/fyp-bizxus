@@ -128,7 +128,7 @@ const SKINS = {
     glow: "rgba(37, 99, 235, 0.42)",
   },
   businesses: {
-    photo: "https://ik.imagekit.io/fac14ggkmb/images%20(1).jpg?tr=w-1600,h-900,c-main,q-80",
+    photo: "https://ik.imagekit.io/fac14ggkmb/business.jpg?tr=w-1600,h-900,c-main,q-80",
     tint: "rgba(30, 27, 75, 0.55)",
     glow: "rgba(99, 102, 241, 0.44)",
   },
@@ -138,12 +138,12 @@ const SKINS = {
     glow: "rgba(14, 165, 233, 0.44)",
   },
   payments: {
-    photo: "https://ik.imagekit.io/fac14ggkmb/images%20(3).jpg?tr=w-1600,h-900,c-main,q-80",
+    photo: "https://ik.imagekit.io/fac14ggkmb/shopping-cart-with-bubbles-geometric-shapes-3d-style.jpg?tr=w-1600,h-900,c-main,q-80",
     tint: "rgba(6, 46, 36, 0.5)",
     glow: "rgba(16, 185, 129, 0.4)",
   },
   reports: {
-    photo: "https://ik.imagekit.io/fac14ggkmb/images%20(2).jpg?tr=w-1600,h-900,c-main,q-80",
+    photo: "https://ik.imagekit.io/fac14ggkmb/meow.jpg?tr=w-1600,h-900,c-main,q-80",
     tint: "rgba(15, 23, 42, 0.62)",
     glow: "rgba(148, 163, 184, 0.3)",
     mono: true,
@@ -155,7 +155,7 @@ const SKINS = {
     soft: true,
   },
   modules: {
-    photo: "https://ik.imagekit.io/fac14ggkmb/images%20(3).jpg?tr=w-1200,h-1000,c-main,q-78,bl-6",
+    photo: "https://ik.imagekit.io/fac14ggkmb/modules.jpg?tr=w-1200,h-1000,c-main,q-78,bl-6",
     tint: "rgba(24, 24, 62, 0.55)",
     glow: "rgba(79, 70, 229, 0.42)",
     soft: true,
@@ -391,7 +391,7 @@ export function Toolbar({ search, onSearchChange, placeholder = "Search", filter
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="w-full rounded-xl border border-line bg-white py-2.5 pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-subtle focus:border-brand-bright focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+          className="w-full rounded-xl border border-line bg-white py-2.5 pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-subtle focus:border-slate-400 focus:shadow-xs"
         />
       </div>
 

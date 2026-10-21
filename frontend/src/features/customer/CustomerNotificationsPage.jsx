@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bell, CreditCard, MessageCircle, PackageCheck, Sparkles, Store, Truck } from "lucide-react";
 
-import { ListSkeleton, PageBanner, SHOP_IMAGES, ShowMore, WarmEmptyState, notificationTypeLabel } from "./shopUi.jsx";
+import { ListSkeleton, PageBanner, PageSurface, SHOP_IMAGES, ShowMore, WarmEmptyState, notificationTypeLabel } from "./shopUi.jsx";
 import { Stagger, StaggerItem } from "../../components/ui/motion.jsx";
 import { getCustomerNotifications, markAllCustomerNotificationsRead, markCustomerNotificationRead } from "../../services/customerPortalApi.js";
 import { getApiErrorMessage } from "../../services/apiError.js";
@@ -84,7 +84,7 @@ const [showAllNotifications, setShowAllNotifications] = useState(false);
   const dayGroups = isLoading ? [] : groupByDay(visibleNotifications);
 
   return (
-    <section className="space-y-6">
+    <PageSurface className="space-y-6">
       {/* One banner, and the three-figure tally beneath it is gone: the unread count appeared in both
           places, twice saying the same number to a reader who only wanted to know how many
           messages were waiting. What survives is the split between unread and read, which the
@@ -107,7 +107,7 @@ const [showAllNotifications, setShowAllNotifications] = useState(false);
               ? "Order confirmations, payment receipts and delivery progress from the businesses you buy from."
               : "Order confirmations, payment receipts and delivery updates land here as they happen."
         }
-        image={SHOP_IMAGES.orders}
+        image={SHOP_IMAGES.notifications}
       >
         {!isLoading && notifications.length ? (
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-brand-100 pt-4">
@@ -236,7 +236,7 @@ const [showAllNotifications, setShowAllNotifications] = useState(false);
           reassurance="You do not need to check back here constantly — we will keep this list, and your order page, up to date for you."
         />
       ) : null}
-    </section>
+    </PageSurface>
   );
 }
 

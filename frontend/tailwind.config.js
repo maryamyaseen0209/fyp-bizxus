@@ -10,11 +10,14 @@ export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
+      spacing: {
+        4.5: "1.125rem",
+      },
       colors: {
         // ---- Typography -------------------------------------------------------
-        ink: "#101633", // --text-primary
-        muted: "#52638D", // --text-secondary
-        subtle: "#8490AE", // --text-muted
+        ink: "#0f172a", // --text-primary
+        muted: "#334155", // --text-secondary (crisp slate-700)
+        subtle: "#475569", // --text-muted (high-contrast slate-600)
 
         // ---- Surfaces ---------------------------------------------------------
         page: "#F8FAFF", // --page-bg
@@ -62,20 +65,20 @@ export default {
           hover: "rgba(255, 255, 255, 0.06)",
         },
 
-        // ---- AI accents mapped into the blue system ---------------------------
+        // ---- Purple accent palette -------------------------------------------
         purple: {
-          DEFAULT: "#2563EB",
-          glow: "#38BDF8",
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#2563EB",
-          700: "#1D4ED8",
-          800: "#1E40AF",
-          900: "#1E3A8A",
+          DEFAULT: "#8B5CF6",
+          glow: "#A78BFA",
+          50: "#F5F3FF",
+          100: "#EDE9FE",
+          200: "#DDD6FE",
+          300: "#C4B5FD",
+          400: "#A78BFA",
+          500: "#8B5CF6",
+          600: "#7C3AED",
+          700: "#6D28D9",
+          800: "#5B21B6",
+          900: "#4C1D95",
         },
 
         // ---- Blue -------------------------------------------------------------
@@ -93,34 +96,32 @@ export default {
           900: "#0A3370",
         },
 
-        // ---- Blue success/info aliases ----------------------------------------
+        // ---- Genuine Emerald & Green Palette ---------------------------------
         green: {
-          DEFAULT: "#2563EB",
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#2563EB",
-          700: "#1D4ED8",
-          800: "#1E40AF",
-          900: "#1E3A8A",
+          DEFAULT: "#10B981",
+          50: "#ECFDF5",
+          100: "#D1FAE5",
+          200: "#A7F3D0",
+          300: "#6EE7B7",
+          400: "#34D399",
+          500: "#10B981",
+          600: "#059669",
+          700: "#047857",
+          800: "#065F46",
+          900: "#064E3B",
         },
-        // Plenty of pages reach for emerald-*; keep it a synonym of the blue ramp
-        // rather than leaving a second, off-scheme green in the UI.
         emerald: {
-          DEFAULT: "#2563EB",
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#2563EB",
-          700: "#1D4ED8",
-          800: "#1E40AF",
-          900: "#1E3A8A",
+          DEFAULT: "#10B981",
+          50: "#ECFDF5",
+          100: "#D1FAE5",
+          200: "#A7F3D0",
+          300: "#6EE7B7",
+          400: "#34D399",
+          500: "#10B981",
+          600: "#059669",
+          700: "#047857",
+          800: "#065F46",
+          900: "#064E3B",
         },
         accent: "#2563EB",
 
@@ -151,6 +152,12 @@ export default {
           faint: "#93A7CC",
           night: "#071329",
           deep: "#0B1B36",
+          // Mid-tone. The admin hero sits at `night` (near-black navy) and the customer hero is
+          // effectively white, so the owner band needs a blue that is clearly darker than one
+          // and clearly lighter than the other. This is that value — and it is a blue, because
+          // the site's identity is blue and the owner portal does not get to change that.
+          work: "#123061",
+          panel: "#0E2247",
         },
 
         // ---- Orange / warning -------------------------------------------------
@@ -217,6 +224,9 @@ export default {
       backgroundImage: {
         "sidebar-rail": "linear-gradient(180deg, #102A43 0%, #123047 45%, #081827 100%)",
         "sidebar-active": "linear-gradient(90deg, #1D4ED8 0%, #38BDF8 100%)",
+        // The owner rail: the same blue family, a little deeper, so the dashboard is
+        // distinguishable from the customer portal without stepping outside the palette.
+        "owner-rail": "linear-gradient(180deg, #0E2247 0%, #102A43 48%, #071329 100%)",
         cta: "linear-gradient(90deg, #1D4ED8, #2563EB)",
         "ai-card": "linear-gradient(135deg, #071A3D 0%, #123047 48%, #172554 100%)",
       },

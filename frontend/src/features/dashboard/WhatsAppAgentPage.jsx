@@ -1,8 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bot,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  ExternalLink,
+  MessageCircle,
+  MessageSquare,
+  PhoneCall,
+  Power,
+  QrCode,
+  RefreshCw,
+  Send,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  Terminal,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useModules } from "../../context/ModuleContext.jsx";
 import { useTenant } from "../../context/TenantContext.jsx";
 import { isDebugMode } from "../../utils/displaySafety.js";
+import { BusinessSetupRequired, OWNER_IMAGES } from "./ownerUi.jsx";
 import {
   disconnectWhatsApp,
   getWhatsAppConversations,
@@ -60,6 +81,11 @@ export function WhatsAppAgentPage() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isRefreshingToken, setIsRefreshingToken] = useState(false);
+  const [showAdvancedBridge, setShowAdvancedBridge] = useState(false);
+  const [showTestMessageForm, setShowTestMessageForm] = useState(false);
+  const [showAllConversations, setShowAllConversations] = useState(false);
+  const [showCustomMessages, setShowCustomMessages] = useState(false);
+  const [showSimulator, setShowSimulator] = useState(false);
 
   const aiEnabled = enabledModules.includes("ai_chat");
   const whatsappEnabled = enabledModules.includes("whatsapp_agent");
@@ -270,7 +296,20 @@ export function WhatsAppAgentPage() {
   }
 
   if (!selectedTenant) {
-    return <div className="rounded-xl border border-line bg-white p-6 text-sm text-muted">Select a business first.</div>;
+    return (
+      <BusinessSetupRequired
+        feature="WhatsApp AI Sales Agent"
+        description="Connect your WhatsApp Business number to automate order taking, product recommendations, and customer support 24/7."
+        icon={MessageSquare}
+        image={OWNER_IMAGES.whatsapp}
+        previewTitle="WhatsApp AI Automation"
+        previewItems={[
+          { title: "Autonomous Order Taking", desc: "AI takes customer order, confirms delivery address, and creates order in dashboard." },
+          { title: "Catalog Recommendations", desc: "AI sends product photos, prices, and answers questions in Urdu or English." },
+          { title: "Seamless Human Handoff", desc: "Jump into any conversation when a customer requests manual assistance." },
+        ]}
+      />
+    );
   }
 
   if (!aiEnabled || !whatsappEnabled) {
@@ -281,322 +320,705 @@ export function WhatsAppAgentPage() {
     );
   }
 
+  const visibleConversations = showAllConversations ? conversations : conversations.slice(0, 3);
+
   return (
-    <section className="space-y-6">
-      <div className="rounded-2xl border border-line bg-white p-6 shadow-card">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">WhatsApp Agent</p>
-        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-ink">WhatsApp Agent for {selectedTenant.name}</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Keep this page ready for your new WhatsApp method. For now, the local simulator lets you test AI replies,
-              handoff keywords, order drafts, and conversation history. The Baileys bridge lets a business owner scan
-              WhatsApp Linked Devices and reply from their own WhatsApp number.
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      {/* 1. CINEMATIC WHATSAPP HERO - Vivid Photograph with Directional Vignette */}
+      <motion.section
+        initial={{ opacity: 0, scale: 0.99 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative isolate overflow-hidden rounded-3xl bg-slate-950 p-6 sm:p-8 shadow-2xl text-white border border-white/10"
+      >
+        {/* Background Photograph - Crisp & vivid */}
+        <img
+          src={OWNER_IMAGES.whatsapp}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 -z-30 h-full w-full object-cover object-center filter brightness-[0.72] contrast-[1.08] saturate-[1.15]"
+          loading="eager"
+        />
+
+        {/* Directional cinematic vignette */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-950/20"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-t from-slate-950/85 via-transparent to-slate-950/30"
+        />
+
+        {/* Ambient atmospheric glow orbs */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-16 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
+
+        {/* Glowing sky horizon light line */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/80 to-transparent shadow-[0_0_12px_rgba(52,211,153,0.7)]"
+        />
+
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-emerald-200 border border-white/20 backdrop-blur">
+                <MessageCircle size={13} className="text-emerald-400" />
+                WhatsApp 24/7 AI Automation
+              </span>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold backdrop-blur ${
+                connected 
+                  ? "bg-emerald-500/25 text-emerald-300 border border-emerald-400/35" 
+                  : "bg-amber-500/25 text-amber-300 border border-amber-400/35"
+              }`}>
+                ● {connected ? "WhatsApp Connected" : "Needs Setup / Pairing"}
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.5)]">
+              WhatsApp Sales & Customer Agent
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-xl">
+              Automate customer replies, share product prices, take orders via WhatsApp, and transfer complex questions directly to human staff.
             </p>
           </div>
-          <div className={connected ? "rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" : "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"}>
-            <div className="font-semibold">{connected ? "Connected" : settings?.isConnected ? "Waiting for bridge connection" : "Needs WhatsApp number"}</div>
-            <div className="mt-1 text-xs">Status: {connectionStatus}</div>
-            {settings?.bridgeStatus ? <div className="mt-1 text-xs">Bridge: {settings.bridgeStatus.replaceAll("_", " ")}</div> : null}
-            {settings?.provider === "baileys" && settings?.bridgeStatus !== "ready" ? (
-              <a className="mt-2 inline-block text-xs font-bold underline" href={bridgeQrUrl} rel="noreferrer noopener" target="_blank">
-                Open WhatsApp connection page
+
+          <div className="flex flex-wrap items-center gap-3">
+            {settings?.provider === "baileys" && !connected ? (
+              <a
+                href={bridgeQrUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-xs sm:text-sm font-extrabold text-white shadow-lg hover:bg-emerald-600 transition"
+              >
+                <QrCode size={16} /> Scan WhatsApp QR
               </a>
             ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("mock-simulator-section");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-xs sm:text-sm font-extrabold text-slate-900 shadow-lg hover:bg-slate-100 transition"
+            >
+              <Bot size={16} /> Test AI Simulator
+            </button>
           </div>
         </div>
-      </div>
 
-      {notice ? <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div> : null}
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
-
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <form onSubmit={handleSave} className="space-y-5 rounded-xl border border-line bg-white p-5 shadow-card">
-          <div>
-            <SectionTitle>Connection settings</SectionTitle>
-            <p className="mt-1 text-sm text-muted">
-              This is a clean provider-neutral setup. Save the business WhatsApp contact number and test the AI flow with the simulator.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm font-medium text-ink">
-              Provider
-              <select className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-sm" value={form.provider} onChange={(event) => updateForm("provider", event.target.value)}>
-                <option value="baileys">Baileys linked device</option>
-                <option value="mock">Mock / local simulator</option>
-              </select>
-              <span className="mt-1 block text-xs font-normal text-muted">Baileys is the WhatsApp Web linked-device approach from your ZIP project.</span>
-            </label>
-            <label className="text-sm font-medium text-ink">
-              Business WhatsApp number
-              <input className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-sm" value={form.businessWhatsAppNumber} onChange={(event) => updateForm("businessWhatsAppNumber", event.target.value)} placeholder="+923001234567" required />
-              <span className="mt-1 block text-xs font-normal text-muted">This number is shown to customers as the business contact number.</span>
-            </label>
-            <label className="text-sm font-medium text-ink">
-              Display name
-              <input className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-sm" value={form.displayName} onChange={(event) => updateForm("displayName", event.target.value)} placeholder={selectedTenant.name} />
-            </label>
-            <label className="text-sm font-medium text-ink">
-              Business hours behavior
-              <select className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-sm" value={form.businessHoursMode} onChange={(event) => updateForm("businessHoursMode", event.target.value)}>
-                <option value="always_on">Always reply with AI</option>
-                <option value="business_hours">Reply during business hours</option>
-                <option value="offline_handoff">Mark handoff outside hours</option>
-              </select>
-            </label>
-          </div>
-
-          <label className="block text-sm font-medium text-ink">
-            Welcome message
-            <textarea className="mt-2 min-h-24 w-full rounded-xl border border-line px-3 py-2 text-sm" value={form.welcomeMessage} onChange={(event) => updateForm("welcomeMessage", event.target.value)} />
-          </label>
-
-          <label className="block text-sm font-medium text-ink">
-            Default fallback reply
-            <textarea className="mt-2 min-h-20 w-full rounded-xl border border-line px-3 py-2 text-sm" value={form.fallbackReply} onChange={(event) => updateForm("fallbackReply", event.target.value)} />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-3 text-sm text-ink">
-              <input type="checkbox" checked={form.agentEnabled} onChange={(event) => updateForm("agentEnabled", event.target.checked)} />
-              Agent enabled
-            </label>
-            <label className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-3 text-sm text-ink">
-              <input type="checkbox" checked={form.autoReplyEnabled} onChange={(event) => updateForm("autoReplyEnabled", event.target.checked)} />
-              Auto-reply with AI agent
-            </label>
-            <label className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-3 text-sm text-ink">
-              <input type="checkbox" checked={form.handoffEnabled} onChange={(event) => updateForm("handoffEnabled", event.target.checked)} />
-              Allow human handoff keywords
-            </label>
-          </div>
-
-          <label className="block text-sm font-medium text-ink">
-            Handoff keywords
-            <input className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-sm" value={form.handoffKeywords} onChange={(event) => updateForm("handoffKeywords", event.target.value)} />
-            <span className="mt-1 block text-xs font-normal text-muted">Comma-separated words like human, owner, call me, insan.</span>
-          </label>
-
-          <div className="rounded-xl bg-surface p-4 text-sm text-muted">
-            <div className="font-semibold text-ink">WhatsApp connection</div>
-            {isDebugMode ? (
-              <div className="mt-1 break-all">{webhookUrl}</div>
-            ) : (
-              <div className="mt-1">Configured automatically for this workspace.</div>
-            )}
-            <div className="mt-3 font-semibold text-ink">Verify token</div>
-            <div className="mt-1">
-              {settings?.webhookVerifyToken ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="font-semibold text-ink">Configured</span>
-                  <button
-                    type="button"
-                    className="rounded-lg border border-line bg-white px-2 py-1 text-xs font-bold text-brand"
-                    onClick={() => copyText(settings.webhookVerifyToken, "Verify token copied.")}
-                  >
-                    Copy
-                  </button>
-                </span>
-              ) : (
-                "Save settings to generate the verify token."
-              )}
+        {/* Metric cards inside hero */}
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md text-white shadow-sm flex flex-col justify-between min-h-[105px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-200/90">Agent Status</span>
+              <span className={`h-2.5 w-2.5 rounded-full ${connected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
             </div>
-            <div className="mt-3 rounded-xl border border-line bg-white p-3 text-xs leading-5">
-              This endpoint is kept as a provider-neutral placeholder for your new WhatsApp method.
-            </div>
+            <div className="mt-2 text-xl sm:text-2xl font-black text-white capitalize">{connected ? "Online Active" : "Standby"}</div>
+            <div className="text-[11px] text-slate-300 font-medium">Provider: {form.provider === "baileys" ? "WhatsApp Web" : "Local Mock"}</div>
           </div>
 
-          {form.provider === "baileys" ? (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <div className="font-semibold">Baileys bridge setup</div>
-                  <p className="mt-1 leading-6">
-                    Save your settings first. When the bridge is connected, BizXusAI handles replies through this tenant.
-                  </p>
-                </div>
-                {isDebugMode ? (
-                  <button className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => copyText(bridgeEnv, "Bridge environment copied.")} type="button">
-                  Copy env
-                  </button>
-                ) : null}
-              </div>
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md text-white shadow-sm flex flex-col justify-between min-h-[105px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-sky-200/90">Linked Number</span>
+              <PhoneCall size={16} className="text-sky-300" />
+            </div>
+            <div className="mt-2 text-base sm:text-lg font-black text-white truncate">{settings?.bridgeConnectedNumber || form.businessWhatsAppNumber || "Not Linked"}</div>
+            <div className="text-[11px] text-sky-200 font-medium">Business Contact</div>
+          </div>
 
-              <div className="mt-3 rounded-xl border border-emerald-300 bg-white p-4">
-                <div className="text-sm font-bold text-ink">Connect this business&apos;s WhatsApp</div>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  {isDebugMode
-                    ? "Opens the pairing page for this business in a new tab. Keep the bridge running while you scan."
-                    : "Connection details are handled by the workspace setup. Save settings and check the connected number below."}
-                </p>
-                {isDebugMode ? (
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <a
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
-                      href={bridgeQrUrl}
-                      rel="noreferrer noopener"
-                      target="_blank"
-                    >
-                      Open WhatsApp connection page
-                    </a>
-                    <button className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => copyText(bridgeQrUrl, "Connection page link copied.")} type="button">
-                      Copy link
-                    </button>
-                  </div>
-                ) : null}
-                {isDebugMode ? (
-                  <div className="mt-2 break-all text-xs text-slate-500">{bridgeQrUrl}</div>
-                ) : null}
-              </div>
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md text-white shadow-sm flex flex-col justify-between min-h-[105px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-200/90">Auto Reply</span>
+              <Sparkles size={16} className="text-indigo-300" />
+            </div>
+            <div className="mt-2 text-xl sm:text-2xl font-black text-white capitalize">{form.autoReplyEnabled ? "24/7 Enabled" : "Paused"}</div>
+            <div className="text-[11px] text-indigo-200 font-medium">{form.businessHoursMode === "always_on" ? "Always On" : "Business Hours"}</div>
+          </div>
 
-              {/* The env block carries the bridge token, so it is never rendered as
-                  text. "Copy env" still puts the real values on the clipboard. */}
-              {isDebugMode ? (
-                <pre className="mt-3 overflow-x-auto rounded-xl bg-white p-3 text-xs leading-5 text-ink">{bridgeEnvRedacted}</pre>
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md text-white shadow-sm flex flex-col justify-between min-h-[105px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-200/90">Conversations</span>
+              <MessageCircle size={16} className="text-purple-300" />
+            </div>
+            <div className="mt-2 text-xl sm:text-2xl font-black text-white">{conversations.length}</div>
+            <div className="text-[11px] text-purple-200 font-medium">Customer Threads</div>
+          </div>
+        </div>
+      </motion.section>
+
+      {notice ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 font-medium">{notice}</div> : null}
+      {error ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 font-medium">{error}</div> : null}
+
+      {/* Primary Configuration & Connection Control Center */}
+      <div className="space-y-5">
+        <form onSubmit={handleSave} className="rounded-2xl border border-line bg-white p-6 shadow-card space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-line pb-4">
+            <div>
+              <SectionTitle>Quick WhatsApp Controls</SectionTitle>
+              <p className="mt-0.5 text-xs text-muted">
+                Essential connection and automation settings for your business.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {connected ? (
+                <button
+                  className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition"
+                  onClick={handleDisconnect}
+                  type="button"
+                >
+                  Disconnect Agent
+                </button>
+              ) : settings?.provider === "baileys" ? (
+                <a
+                  href={bridgeQrUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm transition"
+                >
+                  <QrCode size={14} />
+                  <span>Scan QR to Connect</span>
+                </a>
               ) : null}
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <div className="rounded-xl bg-white p-3">
-                  <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Connected number</div>
-                  <div className="mt-1 font-semibold text-ink">{settings?.bridgeConnectedNumber || settings?.businessWhatsAppNumber || "Not connected yet"}</div>
-                </div>
-                {isDebugMode ? (
-                  <>
-                    <div className="rounded-xl bg-white p-3">
-                      <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Status endpoint</div>
-                      <div className="mt-1 break-all text-xs font-semibold text-ink">{bridgeStatusUrl}</div>
-                    </div>
-                    <div className="rounded-xl bg-white p-3">
-                      <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Inbound endpoint</div>
-                      <div className="mt-1 break-all text-xs font-semibold text-ink">{bridgeInboundUrl}</div>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {isDebugMode ? (
-                  <button className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => copyText(`cd whatsapp-bridge\nnpm install\nnpm run dev`, "Bridge run commands copied.")} type="button">
-                    Copy run commands
-                  </button>
-                ) : null}
-                {isDebugMode ? (
-                  <button className="rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-800" disabled={isRefreshingToken} onClick={handleRefreshToken} type="button">
-                    {isRefreshingToken ? "Refreshing..." : "Refresh bridge token"}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="flex flex-wrap gap-3">
-            <button className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700" disabled={isSaving} type="submit">
-              {isSaving ? "Saving..." : "Save / Connect"}
-            </button>
-            {connected ? (
-              <button className="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-ink hover:bg-surface" onClick={handleDisconnect} type="button">
-                Disconnect
+              <button
+                className="rounded-xl bg-brand px-4 py-1.5 text-xs font-extrabold text-white hover:bg-brand-600 shadow transition disabled:opacity-60"
+                disabled={isSaving}
+                type="submit"
+              >
+                {isSaving ? "Saving..." : "Save Settings"}
               </button>
-            ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="block space-y-1.5">
+              <span className="text-xs font-bold text-ink">Business WhatsApp Number</span>
+              <input
+                className="form-input text-xs"
+                value={form.businessWhatsAppNumber}
+                onChange={(event) => updateForm("businessWhatsAppNumber", event.target.value)}
+                placeholder="+923001234567"
+                required
+              />
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs font-bold text-ink">Assistant Display Name</span>
+              <input
+                className="form-input text-xs"
+                value={form.displayName}
+                onChange={(event) => updateForm("displayName", event.target.value)}
+                placeholder={selectedTenant.name}
+              />
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-xs font-bold text-ink">Connection Mode</span>
+              <select
+                className="form-input text-xs"
+                value={form.provider}
+                onChange={(event) => updateForm("provider", event.target.value)}
+              >
+                <option value="baileys">WhatsApp Web (Linked Device QR)</option>
+                <option value="mock">Local Simulator (Testing Only)</option>
+              </select>
+            </label>
+          </div>
+
+          {/* Quick automation switches */}
+          <div className="grid gap-3 sm:grid-cols-3 pt-2 border-t border-line/60">
+            <label className="flex items-center justify-between rounded-xl border border-line bg-surface/50 p-3 text-xs font-bold text-ink cursor-pointer hover:bg-surface transition">
+              <div>
+                <div>AI Agent Active</div>
+                <div className="text-[11px] font-normal text-muted">Master switch for AI replies</div>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded accent-brand"
+                checked={form.agentEnabled}
+                onChange={(event) => updateForm("agentEnabled", event.target.checked)}
+              />
+            </label>
+
+            <label className="flex items-center justify-between rounded-xl border border-line bg-surface/50 p-3 text-xs font-bold text-ink cursor-pointer hover:bg-surface transition">
+              <div>
+                <div>24/7 Auto-Reply</div>
+                <div className="text-[11px] font-normal text-muted">Reply to customers automatically</div>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded accent-brand"
+                checked={form.autoReplyEnabled}
+                onChange={(event) => updateForm("autoReplyEnabled", event.target.checked)}
+              />
+            </label>
+
+            <label className="flex items-center justify-between rounded-xl border border-line bg-surface/50 p-3 text-xs font-bold text-ink cursor-pointer hover:bg-surface transition">
+              <div>
+                <div>Human Handoff</div>
+                <div className="text-[11px] font-normal text-muted">Pass complex chats to staff</div>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded accent-brand"
+                checked={form.handoffEnabled}
+                onChange={(event) => updateForm("handoffEnabled", event.target.checked)}
+              />
+            </label>
           </div>
         </form>
 
-        <div className="space-y-6">
-          <form onSubmit={handleMockInbound} className="space-y-4 rounded-xl border border-line bg-white p-5 shadow-card">
-            <div>
-              <SectionTitle>Mock customer message</SectionTitle>
-              <p className="mt-1 text-sm text-muted">Simulate a WhatsApp customer asking the agent a question or requesting an order.</p>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {["Menu bhej do", "Zinger burger available hai?", "Delivery charges?", "2 items order kar do"].map((prompt) => (
-                <button
-                  key={prompt}
-                  className="shrink-0 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-muted hover:border-brand-200 hover:bg-brand-50 hover:text-brand"
-                  type="button"
-                  onClick={() => setMockForm((current) => ({ ...current, messageText: prompt }))}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-            <input className="w-full rounded-xl border border-line px-3 py-2 text-sm" value={mockForm.customerPhone} onChange={(event) => setMockForm((current) => ({ ...current, customerPhone: event.target.value }))} placeholder="Customer phone" />
-            <input className="w-full rounded-xl border border-line px-3 py-2 text-sm" value={mockForm.customerName} onChange={(event) => setMockForm((current) => ({ ...current, customerName: event.target.value }))} placeholder="Customer name" />
-            <textarea className="min-h-28 w-full rounded-xl border border-line px-3 py-2 text-sm" value={mockForm.messageText} onChange={(event) => setMockForm((current) => ({ ...current, messageText: event.target.value }))} />
-            <button className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700" disabled={!connected || isSimulating} type="submit">
-              {isSimulating ? "Processing..." : "Process with AI"}
-            </button>
-            {lastResult ? (
-              <div className="space-y-3 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-cyan-50 p-4 text-sm text-brand-900">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="font-semibold">WhatsApp AI reply</div>
-                  <span className={lastResult.handoffRequired ? "rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800" : "rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800"}>
-                    {lastResult.handoffRequired ? "Handoff" : "AI reply"}
-                  </span>
-                </div>
-                <div className="rounded-2xl rounded-bl-lg bg-white px-4 py-3 shadow-card">
-                  <p className="leading-6">{lastResult.reply}</p>
-                </div>
+        {/* Accordion 1: Customize Welcome Greetings & Fallback */}
+        <div className="rounded-2xl border border-line bg-white shadow-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowCustomMessages((v) => !v)}
+            className="flex w-full items-center justify-between p-5 text-left font-semibold text-ink hover:bg-surface/50 transition"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-8 w-8 place-items-center rounded-xl bg-blue-50 text-brand">
+                <MessageSquare size={16} />
               </div>
-            ) : null}
-          </form>
-
-          <form onSubmit={handleSendTest} className="space-y-4 rounded-xl border border-line bg-white p-5 shadow-card">
-            <div>
-              <SectionTitle>Send test message</SectionTitle>
-              <p className="mt-1 text-sm text-muted">This logs a local outbound message for testing and review.</p>
+              <div>
+                <span className="text-sm font-bold text-ink">Customize Welcome &amp; Fallback Messages</span>
+                <p className="text-xs text-muted font-normal">
+                  Greeting text, human handoff trigger keywords, and business operating schedule.
+                </p>
+              </div>
             </div>
-            <input className="w-full rounded-xl border border-line px-3 py-2 text-sm" value={testForm.toPhone} onChange={(event) => setTestForm((current) => ({ ...current, toPhone: event.target.value }))} placeholder="Recipient phone" />
-            <textarea className="min-h-20 w-full rounded-xl border border-line px-3 py-2 text-sm" value={testForm.messageText} onChange={(event) => setTestForm((current) => ({ ...current, messageText: event.target.value }))} />
-            <button className="rounded-xl border border-line px-4 py-2 text-sm font-semibold text-ink hover:bg-surface" disabled={!connected || isSendingTest} type="submit">
-              {isSendingTest ? "Sending..." : "Log test"}
-            </button>
-          </form>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-brand">{showCustomMessages ? "Hide" : "Customize"}</span>
+              {showCustomMessages ? <ChevronUp size={15} className="text-muted" /> : <ChevronDown size={15} className="text-muted" />}
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {showCustomMessages && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="border-t border-line p-5 sm:p-6 space-y-4"
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-bold text-ink">Operating Schedule</span>
+                    <select
+                      className="form-input text-xs"
+                      value={form.businessHoursMode}
+                      onChange={(event) => updateForm("businessHoursMode", event.target.value)}
+                    >
+                      <option value="always_on">Always Reply 24/7</option>
+                      <option value="business_hours">Reply During Business Hours Only</option>
+                      <option value="offline_handoff">Mark Human Handoff Outside Hours</option>
+                    </select>
+                  </label>
+
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-bold text-ink">Handoff Trigger Keywords</span>
+                    <input
+                      className="form-input text-xs"
+                      value={form.handoffKeywords}
+                      onChange={(event) => updateForm("handoffKeywords", event.target.value)}
+                      placeholder="human, owner, call me, baat karni, insan"
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-bold text-ink">Customer Welcome Greeting</span>
+                    <textarea
+                      className="form-input min-h-20 text-xs"
+                      value={form.welcomeMessage}
+                      onChange={(event) => updateForm("welcomeMessage", event.target.value)}
+                      placeholder="Hello! Welcome to our store. How can I assist you today?"
+                    />
+                    <span className="block text-[11px] text-muted">Sent automatically when a customer messages your WhatsApp for the first time.</span>
+                  </label>
+
+                  <label className="block space-y-1.5">
+                    <span className="text-xs font-bold text-ink">Fallback Reply</span>
+                    <textarea
+                      className="form-input min-h-16 text-xs"
+                      value={form.fallbackReply}
+                      onChange={(event) => updateForm("fallbackReply", event.target.value)}
+                      placeholder="I'm forwarding your request to our support team..."
+                    />
+                    <span className="block text-[11px] text-muted">Sent if an unexpected error occurs or when the assistant needs human assistance.</span>
+                  </label>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="rounded-xl bg-brand px-5 py-2 text-xs font-bold text-white hover:bg-brand-600 transition shadow-sm"
+                  >
+                    {isSaving ? "Saving..." : "Save Messages"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Accordion 2: Customer Simulator & Outbound Test */}
+        <div id="mock-simulator-section" className="rounded-2xl border border-line bg-white shadow-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowSimulator((v) => !v)}
+            className="flex w-full items-center justify-between p-5 text-left font-semibold text-ink hover:bg-surface/50 transition"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+                <Bot size={16} />
+              </div>
+              <div>
+                <span className="text-sm font-bold text-ink">Test Simulator &amp; Outbound Messages</span>
+                <p className="text-xs text-muted font-normal">
+                  Simulate incoming WhatsApp customer questions in Urdu or English, or send a test alert.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-brand">{showSimulator ? "Hide" : "Open Simulator"}</span>
+              {showSimulator ? <ChevronUp size={15} className="text-muted" /> : <ChevronDown size={15} className="text-muted" />}
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {showSimulator && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="border-t border-line p-5 sm:p-6 space-y-6"
+              >
+                {/* Inbound Simulator */}
+                <form onSubmit={handleMockInbound} className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink uppercase tracking-wider">Simulate Inbound Message</span>
+                    <span className="text-[11px] text-muted">Tests AI RAG response directly</span>
+                  </div>
+
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {["Menu bhej do", "Zinger burger available hai?", "Delivery charges kya hain?", "2 items order kar do"].map((prompt) => (
+                      <button
+                        key={prompt}
+                        className="shrink-0 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-slate-700 hover:border-brand-200 hover:bg-brand-50 hover:text-brand transition"
+                        type="button"
+                        onClick={() => setMockForm((current) => ({ ...current, messageText: prompt }))}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <input
+                      className="form-input text-xs"
+                      value={mockForm.customerPhone}
+                      onChange={(event) => setMockForm((current) => ({ ...current, customerPhone: event.target.value }))}
+                      placeholder="Demo phone (+92...)"
+                    />
+                    <input
+                      className="form-input text-xs"
+                      value={mockForm.customerName}
+                      onChange={(event) => setMockForm((current) => ({ ...current, customerName: event.target.value }))}
+                      placeholder="Customer Name"
+                    />
+                  </div>
+
+                  <textarea
+                    className="form-input min-h-20 text-xs"
+                    value={mockForm.messageText}
+                    onChange={(event) => setMockForm((current) => ({ ...current, messageText: event.target.value }))}
+                    placeholder="Type customer question..."
+                  />
+
+                  <div className="flex justify-end">
+                    <button
+                      className="rounded-xl bg-ink px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50 transition flex items-center gap-2"
+                      disabled={!connected || isSimulating}
+                      type="submit"
+                    >
+                      <Send size={13} />
+                      <span>{isSimulating ? "Simulating AI..." : "Simulate Customer Question"}</span>
+                    </button>
+                  </div>
+
+                  {lastResult ? (
+                    <div className="space-y-2 rounded-2xl border border-brand-200 bg-blue-50/50 p-4 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-brand">AI Assistant Response</span>
+                        <span className={lastResult.handoffRequired ? "rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-800" : "rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800"}>
+                          {lastResult.handoffRequired ? "Handoff to Human" : "Handled by AI"}
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-white p-3 text-ink leading-relaxed shadow-sm border border-line/60 whitespace-pre-wrap">
+                        {lastResult.reply}
+                      </div>
+                    </div>
+                  ) : null}
+                </form>
+
+                {/* Outbound Test Message */}
+                <div className="pt-4 border-t border-line/60">
+                  <button
+                    type="button"
+                    onClick={() => setShowTestMessageForm((v) => !v)}
+                    className="flex w-full items-center justify-between text-left text-xs font-bold text-slate-700 hover:text-brand"
+                  >
+                    <span>Send Test Outbound Notification</span>
+                    <span className="text-[11px] text-muted">{showTestMessageForm ? "Hide" : "Open"}</span>
+                  </button>
+
+                  <AnimatePresence>
+                    {showTestMessageForm && (
+                      <motion.form
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onSubmit={handleSendTest}
+                        className="space-y-3 pt-3"
+                      >
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <input
+                            className="form-input text-xs"
+                            value={testForm.toPhone}
+                            onChange={(event) => setTestForm((current) => ({ ...current, toPhone: event.target.value }))}
+                            placeholder="Recipient phone (+92...)"
+                          />
+                          <input
+                            className="form-input text-xs"
+                            value={testForm.messageText}
+                            onChange={(event) => setTestForm((current) => ({ ...current, messageText: event.target.value }))}
+                            placeholder="Notification text..."
+                          />
+                        </div>
+                        <button
+                          className="rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+                          disabled={!connected || isSendingTest}
+                          type="submit"
+                        >
+                          {isSendingTest ? "Sending..." : "Send Outbound Message"}
+                        </button>
+                      </motion.form>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Accordion 3: Developer Endpoints & Bridge Config */}
+        <div className="rounded-2xl border border-line bg-white shadow-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowAdvancedBridge((v) => !v)}
+            className="flex w-full items-center justify-between p-5 text-left font-semibold text-ink hover:bg-surface/50 transition"
+          >
+            <div className="flex items-center gap-3">
+              <div className="grid h-8 w-8 place-items-center rounded-xl bg-slate-100 text-slate-700">
+                <Terminal size={16} />
+              </div>
+              <div>
+                <span className="text-sm font-bold text-ink">Developer Endpoints &amp; Webhooks</span>
+                <p className="text-xs text-muted font-normal">
+                  Technical webhook URLs, verify tokens, and local bridge credentials.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-brand">{showAdvancedBridge ? "Hide" : "Show Details"}</span>
+              {showAdvancedBridge ? <ChevronUp size={15} className="text-muted" /> : <ChevronDown size={15} className="text-muted" />}
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {showAdvancedBridge && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="border-t border-line p-5 sm:p-6 space-y-4"
+              >
+                <div className="rounded-xl bg-surface/50 p-4 border border-line text-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-semibold text-ink block">Webhook Inbound URL</span>
+                      <code className="text-[11px] text-muted break-all">{webhookUrl}</code>
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-line bg-white px-2.5 py-1 text-[11px] font-bold text-brand hover:bg-surface transition"
+                      onClick={() => copyText(webhookUrl, "Webhook URL copied.")}
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-line/60">
+                    <div>
+                      <span className="font-semibold text-ink block">Verify Token</span>
+                      <span className="text-[11px] text-muted">{settings?.webhookVerifyToken ? "Configured" : "Not generated"}</span>
+                    </div>
+                    {settings?.webhookVerifyToken ? (
+                      <button
+                        type="button"
+                        className="rounded-lg border border-line bg-white px-2.5 py-1 text-[11px] font-bold text-brand hover:bg-surface transition"
+                        onClick={() => copyText(settings.webhookVerifyToken, "Verify token copied.")}
+                      >
+                        Copy Token
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                {form.provider === "baileys" ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-3 text-xs text-emerald-950">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold">Baileys Local Bridge Status &amp; Link</span>
+                      {isDebugMode ? (
+                        <button
+                          type="button"
+                          className="rounded-lg bg-white border border-emerald-300 px-2.5 py-1 text-[11px] font-bold text-emerald-800"
+                          onClick={() => copyText(bridgeEnv, "Bridge environment copied.")}
+                        >
+                          Copy .env
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <a
+                        className="rounded-lg bg-emerald-600 px-3 py-1.5 font-bold text-white hover:bg-emerald-700"
+                        href={bridgeQrUrl}
+                        rel="noreferrer noopener"
+                        target="_blank"
+                      >
+                        Open QR Pairing Page
+                      </a>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-emerald-300 bg-white px-3 py-1.5 font-bold text-emerald-800"
+                        onClick={() => copyText(bridgeQrUrl, "Pairing link copied.")}
+                      >
+                        Copy Pairing Link
+                      </button>
+                      {isDebugMode ? (
+                        <button
+                          type="button"
+                          className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-bold text-amber-800"
+                          disabled={isRefreshingToken}
+                          onClick={handleRefreshToken}
+                        >
+                          {isRefreshingToken ? "Refreshing..." : "Refresh Token"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      <div className="rounded-xl border border-line bg-white p-5 shadow-card">
-        <div className="flex items-center justify-between gap-4">
+      {/* Recent WhatsApp Conversations */}
+      <div className="rounded-2xl border border-line bg-white p-6 shadow-card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <SectionTitle>Recent WhatsApp conversations</SectionTitle>
-            <p className="mt-1 text-sm text-muted">These also appear in the AI Chat conversation review screen.</p>
+            <SectionTitle>Recent WhatsApp Conversations</SectionTitle>
+            <p className="mt-1 text-xs sm:text-sm text-muted">
+              Live conversation log of customers who interacted through WhatsApp.
+            </p>
           </div>
-          <button className="rounded-xl border border-line px-3 py-2 text-sm font-semibold text-ink hover:bg-surface" onClick={() => loadWorkspace()} type="button">
-            Refresh
+          <button
+            className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink hover:bg-white transition inline-flex items-center gap-1.5"
+            onClick={() => loadWorkspace()}
+            type="button"
+          >
+            <RefreshCw size={13} />
+            <span>Refresh</span>
           </button>
         </div>
-        <div className="mt-4 overflow-hidden rounded-xl border border-line">
+
+        <div className="overflow-x-auto rounded-xl border border-line">
           <table className="min-w-full divide-y divide-line text-sm">
             <thead className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.12em] text-subtle">
               <tr>
                 <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Last intent</th>
-                <th className="px-4 py-3">Summary</th>
-                <th className="px-4 py-3">Last message</th>
+                <th className="px-4 py-3">Last Intent</th>
+                <th className="px-4 py-3">Conversation Summary</th>
+                <th className="px-4 py-3">Last Active</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line bg-white">
-              {conversations.length ? (
-                conversations.map((conversation) => (
-                  <tr key={conversation.id}>
+              {visibleConversations.length ? (
+                visibleConversations.map((conversation) => (
+                  <tr key={conversation.id} className="hover:bg-slate-50/70 transition">
                     <td className="px-4 py-3">
-                      <div className="font-medium text-ink">{conversation.externalCustomerName || "WhatsApp Customer"}</div>
+                      <div className="font-extrabold text-ink">{conversation.externalCustomerName || "WhatsApp Customer"}</div>
                       <div className="text-xs text-muted">{conversation.externalCustomerPhone}</div>
                     </td>
-                    <td className="px-4 py-3 text-muted">{conversation.lastIntent || "-"}</td>
-                    <td className="px-4 py-3 text-muted">{conversation.summary || "-"}</td>
-                    <td className="px-4 py-3 text-muted">{formatDate(conversation.lastMessageAt)}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-brand capitalize">
+                        {String(conversation.lastIntent || "general").replaceAll("_", " ")}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted max-w-xs truncate">
+                      {conversation.summary || "No summary recorded"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted font-medium">
+                      {formatDate(conversation.lastMessageAt)}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td className="px-4 py-6 text-center text-muted" colSpan="4">
-                    No WhatsApp conversations yet. Use the mock simulator to test the flow.
+                  <td className="px-4 py-8 text-center text-sm text-muted" colSpan="4">
+                    No WhatsApp customer conversations recorded yet. Use the simulator above to test.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {conversations.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setShowAllConversations((curr) => !curr)}
+            className="w-full rounded-xl border border-dashed border-line bg-surface/60 py-2.5 text-center text-xs font-bold text-brand hover:bg-blue-50/50 hover:border-brand/40 transition flex items-center justify-center gap-1.5"
+          >
+            {showAllConversations ? (
+              <>
+                <span>Show Fewer Conversations (Show latest 3)</span>
+                <ChevronUp size={14} />
+              </>
+            ) : (
+              <>
+                <span>Show All WhatsApp Conversations ({conversations.length - 3} more)</span>
+                <ChevronDown size={14} />
+              </>
+            )}
+          </button>
+        )}
       </div>
-    </section>
+    </motion.section>
   );
 }

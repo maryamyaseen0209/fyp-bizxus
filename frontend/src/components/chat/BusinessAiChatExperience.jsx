@@ -457,10 +457,16 @@ export function BusinessAiChatExperience({
             </div>
             <div className="flex items-end gap-3">
               <textarea
-                className="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+                className="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:shadow-xs"
                 placeholder="Type your message, e.g. '2 zinger burgers delivery kar do'"
                 value={messageText}
                 onChange={(event) => setMessageText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
               />
               <button className="rounded-2xl bg-gradient-to-br from-brand-600 to-cyan-600 px-5 py-3 text-sm font-bold text-white shadow-card disabled:cursor-not-allowed disabled:opacity-60" disabled={isSending || !messageText.trim()}>
                 {isSending ? "Sending..." : "Send"}

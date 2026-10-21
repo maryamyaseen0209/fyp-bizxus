@@ -1,10 +1,16 @@
 import { Bell, Bot, LogOut, Receipt, ShoppingBag, ShoppingCart, Store, UserRound } from "lucide-react";
 import { Shell } from "./Shell.jsx";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useCustomer } from "../../context/CustomerContext.jsx";
 import { logoutCustomer } from "../../services/customerAuthApi.js";
+
+const CUSTOMER_IMAGES = [
+  "https://ik.imagekit.io/fac14ggkmb/shopping-cart-with-bubbles-geometric-shapes-3d-style.jpg?updatedAt=1790956275176",
+  "https://ik.imagekit.io/fac14ggkmb/3d-character-emerging-from-smartphone.jpg?updatedAt=1790956215000",
+  "https://ik.imagekit.io/fac14ggkmb/3d-rendering-cartoon-shopping-cart.jpg?updatedAt=1790956201450"
+];
 
 const navItems = [
   { to: "/customer/marketplace", label: "Browse Businesses", icon: Store, section: "Shop" },
@@ -24,6 +30,10 @@ export function CustomerLayout() {
   const navigate = useNavigate();
   const { customer, clearCustomerSession } = useCustomer();
   const [sidebarPanel, setSidebarPanel] = useState(null);
+
+  const bgImage = useMemo(() => {
+    return CUSTOMER_IMAGES[Math.floor(Math.random() * CUSTOMER_IMAGES.length)];
+  }, []);
 
   async function handleLogout() {
     try {
@@ -80,6 +90,7 @@ export function CustomerLayout() {
       asideExtra={sidebarPanel}
       asideFooter={asideFooter}
       headerActions={headerActions}
+      showSearch={false}
       flowSteps={[
         { label: "Browse", icon: Store },
         { label: "Choose", icon: ShoppingBag },
@@ -88,7 +99,7 @@ export function CustomerLayout() {
         { label: "Track", icon: Receipt },
       ]}
       outletContext={{ setCustomerSidebarPanel: setSidebarPanel }}
-      focusModeToggle={false}
+      backgroundImage={bgImage}
     />
   );
 }

@@ -43,13 +43,65 @@ export const SHOP_IMAGES = {
   business: "https://ik.imagekit.io/fac14ggkmb/image_9df7c110.jpg?tr=x-0,y-78,w-1328,h-660,c-main,q-80",
   // Neutral line-art, sits quietly on white.
   empty: "https://ik.imagekit.io/fac14ggkmb/images.png?tr=w-420,h-315,c-main,q-80",
-  // Faded backdrops for the account pages. Each is a different photograph so the four screens are
-  // distinguishable at a glance, but they share one light blue wash so the portal still reads as
-  // a single product rather than four unrelated pages.
-  cart: "https://ik.imagekit.io/fac14ggkmb/magnific__18001100-or-wider-landscapewarm-and-human-a-shopfr__50800.png?tr=w-900,h-420,c-main,q-70",
-  orders: "https://ik.imagekit.io/fac14ggkmb/image_9df7c110.jpg?tr=x-0,y-78,w-1328,h-660,c-main,q-70",
-  account: "https://ik.imagekit.io/fac14ggkmb/3d-character-emerging-from-smartphone.jpg?tr=w-560,h-420,c-main,q-70",
+  // Full-bleed backdrops for the account pages. These fill the whole banner rather than sitting
+  // in a corner, so they are requested as wide crops — a squarish crop stretched across a band
+  // is a blurry crop. `q-70` is enough because a heavy scrim sits on top of them.
+  //
+  // One scene per page, matched to what that page is about: a cart for the cart, a market stall
+  // for orders, a phone for notifications, a shop counter for the profile.
+  cart: "https://ik.imagekit.io/fac14ggkmb/shopping-cart-with-bubbles-geometric-shapes-3d-style.jpg?tr=w-1400,h-560,c-main,q-70",
+  orders: "https://ik.imagekit.io/fac14ggkmb/image_9df7c110.jpg?tr=x-0,y-78,w-1328,h-520,c-main,q-70",
+  notifications: "https://ik.imagekit.io/fac14ggkmb/images%20(2).jpg?updatedAt=1790834145777",
+  account: "https://ik.imagekit.io/fac14ggkmb/magnific__18001100-or-wider-landscapewarm-and-human-a-shopfr__50800.png?tr=w-1400,h-560,c-main,q-70",
 };
+
+/**
+ * The page itself: a full-section photographic background, with the content sitting on top.
+ *
+ * The banner above already shows the scene sharply; this is the same photograph carried down the
+ * whole page as a texture, so the screen does not read as a photo strip with a white page bolted
+ * underneath it.
+ *
+ * The scrim is deliberately heavy — around ninety percent white. Two reasons. The content is
+ * cards of real text, which have to stay legible over anything; and because `object-cover` on a
+ * page several screens tall crops the source hard, a heavy scrim means nobody can tell the
+ * photograph has been zoomed. What you get is a whisper of the scene in the gutters and around
+ * the edges, which is depth rather than decoration.
+ *
+ * A tint at the top ties the surface to the banner above it. Decorative, so `aria-hidden`.
+ */
+export function PageSurface({ image, className = "", children }) {
+  return (
+    <div className={`relative isolate ${className}`.trim()}>
+      {image ? (
+        <>
+          <img
+            src={image}
+            alt=""
+            aria-hidden="true"
+            /* Slightly punchier than the raw upload. A photograph behind a flat wash reads as
+               mud; a little saturation and contrast keeps it a photograph. */
+            className="absolute inset-0 -z-20 h-full w-full object-cover saturate-110 contrast-[1.03]"
+            loading="lazy"
+            decoding="async"
+          />
+          {/* One even wash across the whole page. The previous version ran a directional
+              white gradient, which left the photograph visible on one side and invisible on the
+              other — a banner photo stranded in a corner, which is what this was meant to fix.
+              Flat and much lighter, so the scene reads everywhere. */}
+          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-white/62" />
+          {/* A brand tint rather than more white, so the pale wash shifts the photograph towards
+              the product's blue instead of draining it. */}
+          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-br from-sky-100/45 via-brand-50/30 to-brand-100/45" />
+        </>
+      ) : null}
+
+      {/* Above the surface, not inside it, so the content is never a child of a positioned
+          backdrop and cannot accidentally inherit its stacking. */}
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
 
 /**
  * The banner at the top of the account pages — cart, orders, notifications, profile.
@@ -57,38 +109,59 @@ export const SHOP_IMAGES = {
  * These four each grew their own header, which meant four slightly different boxes saying the
  * same three things. This is one of them.
  *
- * On the photograph: it sits at low opacity behind a radial mask, so it fades out rather than
- * ending in a hard rectangular edge. A visible photo at full strength behind body text is what
- * makes a banner look like a template; at this opacity it reads as depth. It is decorative, so it
- * is `aria-hidden`, and it is hidden below `sm` because there is no room for it on a phone and a
- * squeezed photograph reads as a failed image.
+ * The photograph fills the entire band. A corner image reads as a stock decoration pasted onto
+ * the page; a full-bleed one reads as a place, which is what the header of a marketplace should
+ * suggest.
+ *
+ * Two scrims sit over it. The white one runs almost solid on the left, where all the copy is,
+ * and thins towards the right so the picture is visible without ever competing with the words —
+ * the text stays dark on light, because these are light pages and the contrast has to stay that
+ * way round. The second is a sky-to-brand tint that keeps the far side from going grey.
+ *
+ * The image settles once and stops. An earlier version drifted up and down on a six-second
+ * infinite loop behind body copy on four screens, which is precisely the perpetual motion that
+ * makes a product feel unprofessional; the band now settles and is still.
+ *
+ * Decorative, so `aria-hidden` with empty alt — a screen-reader user should not hear a filename
+ * once per page.
  */
 export function PageBanner({ eyebrow, title, description, meta = [], image, children }) {
   const reduce = useReducedMotion();
 
   return (
-    <header className="relative isolate overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-white via-sky-50 to-brand-50 p-5 sm:p-6">
+    <header className="relative isolate min-h-[10rem] overflow-hidden rounded-2xl border border-line bg-white p-5 shadow-card sm:min-h-[13rem] sm:p-6">
       {image ? (
+        <motion.img
+          src={image}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 h-full w-full object-cover saturate-110"
+          initial={reduce ? false : { opacity: 0, scale: 1.04 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.9, ease: EASE }}
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-10 -top-12 hidden h-52 w-80 opacity-20 sm:block"
-        >
-          <img
-            src={image}
-            alt=""
-            className="h-full w-full rounded-2xl object-cover"
-            style={{
-              maskImage: "radial-gradient(ellipse 70% 70% at 60% 40%, black, transparent 72%)",
-              WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 60% 40%, black, transparent 72%)",
-            }}
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-      ) : null}
+          className="absolute inset-0 -z-20 bg-gradient-to-br from-white via-sky-50 to-brand-50"
+        />
+      )}
+
+      {/* Two even washes, no directional gradient. The copy used to sit on a wash that was solid
+          on the left and thinned to nothing on the right, which meant the photograph was only
+          ever half present — the left-alignment complaint. Flat washes put the image under the
+          whole band at equal strength.
+
+          Contrast is held by the text colour rather than by burying the photo: the title is
+          `text-ink` and the description is darkened to `text-ink/75`, which both stay legible
+          over a 58% white wash without needing the image hidden behind a heavier one. */}
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-white/58" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-br from-sky-100/45 via-transparent to-brand-100/50" />
 
       <motion.div
-        className="relative"
+        className="relative max-w-2xl"
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE }}
@@ -102,7 +175,7 @@ export function PageBanner({ eyebrow, title, description, meta = [], image, chil
         </h1>
 
         {description ? (
-          <p className="mt-1.5 max-w-xl text-sm leading-6 text-muted">{description}</p>
+          <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-ink/75">{description}</p>
         ) : null}
 
         {/* Facts, not decoration: the numbers a reader actually came for. */}
@@ -111,7 +184,7 @@ export function PageBanner({ eyebrow, title, description, meta = [], image, chil
             {meta.map((entry) => (
               <div key={entry.label} className="flex items-baseline gap-1.5">
                 <span className="text-base font-extrabold leading-none text-ink">{entry.value}</span>
-                <span className="text-xs font-semibold text-muted">{entry.label}</span>
+                <span className="text-xs font-semibold text-ink/70">{entry.label}</span>
               </div>
             ))}
           </div>

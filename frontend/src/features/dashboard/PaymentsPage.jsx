@@ -1,13 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  ArrowRight,
+  Banknote,
+  Building2,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  CreditCard,
+  ExternalLink,
+  Receipt,
+  RefreshCw,
+  ShieldCheck,
+  Wallet,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { CustomerPaymentInstructions } from "../../components/payments/CustomerPaymentInstructions.jsx";
 import { PaymentProofBadge, PaymentStatusBadge } from "../../components/payments/PaymentStatusBadge.jsx";
 import { useTenant } from "../../context/TenantContext.jsx";
 import { decidePaymentRecord, getOwnerPaymentReceiptHtml, getPaymentOverview, recordTransactionPayment, refundTransactionPayment, syncStripePaymentRecord, updatePaymentSettings } from "../../services/paymentApi.js";
-import { capitalize } from "../../utils/transaction.js";
 import { SectionTitle } from "../../components/ui/SectionTitle.jsx";
-import { StatCard as KitStatCard } from "../../components/ui/index.jsx";
+import { EASE } from "../../components/ui/motion.jsx";
+import { BusinessSetupRequired, OWNER_IMAGES, OwnerPanel } from "../dashboard/ownerUi.jsx";
 import { getApiErrorMessage } from "../../services/apiError.js";
 
 const defaultSettings = {
@@ -42,6 +58,7 @@ const methodOptions = [
 export function PaymentsPage() {
   const { selectedTenant } = useTenant();
   const [settings, setSettings] = useState(defaultSettings);
+  const [showGateway, setShowGateway] = useState(false);
   const [records, setRecords] = useState([]);
   const [outstanding, setOutstanding] = useState([]);
   const [stripeWebhookEvents, setStripeWebhookEvents] = useState([]);
@@ -54,6 +71,9 @@ export function PaymentsPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [savingPaymentId, setSavingPaymentId] = useState("");
   const [decisionDrafts, setDecisionDrafts] = useState({});
+  const [expandedTxId, setExpandedTxId] = useState("");
+  const [showAllOutstanding, setShowAllOutstanding] = useState(false);
+  const [showAllRecords, setShowAllRecords] = useState(false);
 
   useEffect(() => {
     if (selectedTenant?.id) {
@@ -239,44 +259,191 @@ export function PaymentsPage() {
 
   if (!selectedTenant) {
     return (
-      <section className="space-y-4">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Payments</h1>
-        <p className="text-sm text-muted">Create a business before configuring payments.</p>
-        <Link className="inline-flex rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white" to="/dashboard/business">
-          Create Business
-        </Link>
-      </section>
+      <BusinessSetupRequired
+        feature="Payments & Settlement"
+        description="Configure Cash on Delivery, JazzCash, Easypaisa, Raast bank transfers, and automated card processing for your storefront and counter."
+        icon={CreditCard}
+        image={OWNER_IMAGES.payments}
+        previewTitle="Payment Capabilities For Your Store"
+        previewItems={[
+          { title: "Cash on Delivery (COD)", desc: "Zero setup fee, instantaneous activation for local parcel deliveries." },
+          { title: "Mobile Wallets (JazzCash & Easypaisa)", desc: "Direct wallet-to-wallet transfer instructions or automated API webhooks." },
+          { title: "Bank Wire & Raast P2M", desc: "Accept instant IBAN and phone-based instant bank settlements." },
+        ]}
+      />
     );
   }
 
+  const visibleOutstanding = showAllOutstanding ? outstanding : outstanding.slice(0, 3);
+  const visibleRecords = showAllRecords ? records : records.slice(0, 5);
+
   return (
-    <section className="space-y-6">
-      <div className="border-b border-line-soft pb-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand">Phase 25</p>
-        <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-ink">Payments</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-          Configure COD, manual, JazzCash, EasyPaisa, and bank transfer instructions. Record verified payments and refunds against orders.
-        </p>
-      </div>
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      {/* 1. CINEMATIC PAYMENTS HERO - Vivid Photograph with Directional Vignette */}
+      <motion.section
+        initial={{ opacity: 0, scale: 0.99 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative isolate overflow-hidden rounded-3xl bg-slate-950 p-6 sm:p-8 shadow-2xl text-white border border-white/10"
+      >
+        {/* Background Photograph - Contextual Payments & Checkout image */}
+        <img
+          src={OWNER_IMAGES.payments}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 -z-30 h-full w-full object-cover object-center filter brightness-[0.72] contrast-[1.08] saturate-[1.15]"
+          loading="eager"
+        />
 
-      {message ? <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{message}</div> : null}
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+        {/* Directional cinematic vignette: high contrast on text side, clear photo visibility on right */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-950/20"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-20 bg-gradient-to-t from-slate-950/85 via-transparent to-slate-950/30"
+        />
 
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="Received" value={formatMoney(summary.received || 0)} />
-        <StatCard label="Pending review" value={formatMoney(summary.pendingVerification || 0)} />
-        <StatCard label="COD selected" value={formatMoney(summary.cod || 0)} />
-        <StatCard label="Refunded" value={formatMoney(summary.refunded || 0)} />
-        <StatCard label="Net received" value={formatMoney(summary.netReceived || 0)} />
-        <StatCard label="Outstanding" value={summary.outstandingTransactions || 0} />
-      </div>
+        {/* Subtle atmospheric ambient glows */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-16 h-80 w-80 rounded-full bg-indigo-500/15 blur-3xl" />
 
-      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-xl border border-line bg-white p-5 shadow-card">
+        {/* Glowing sky horizon light line */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/80 to-transparent shadow-[0_0_12px_rgba(56,189,248,0.7)]"
+        />
+
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-sky-200 border border-white/20 backdrop-blur">
+                <CreditCard size={13} className="text-sky-300" />
+                Payments & Settlements Desk
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-bold text-sky-300 border border-blue-400/30 backdrop-blur">
+                ● {summary.outstandingTransactions || 0} Orders Unpaid
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.5)]">
+              Payment Methods & Cash Verification
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-xl">
+              Manage Cash on Delivery, Bank Transfers, JazzCash & EasyPaisa wallets. Verify customer transaction proofs and issue payment receipts.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to="/dashboard/transactions"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-xs sm:text-sm font-extrabold text-slate-900 shadow-lg hover:bg-slate-100 transition"
+            >
+              <Receipt size={16} /> View Orders
+            </Link>
+          </div>
+        </div>
+
+        {/* Cinematic Metric cards */}
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">Net Collected</span>
+              <Banknote size={17} className="text-emerald-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] truncate">{formatMoney(summary.netReceived || 0)}</div>
+            <div className="text-[11px] text-slate-300 font-medium">Net revenue kept</div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">Cash on Delivery</span>
+              <Wallet size={17} className="text-sky-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] truncate">{formatMoney(summary.cod || 0)}</div>
+            <div className="text-[11px] text-sky-200 font-medium">Collected via COD</div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">Pending Proofs</span>
+              <Clock size={17} className="text-amber-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-amber-300 drop-shadow-[0_2px_8px_rgba(251,191,36,0.4)] truncate">{formatMoney(summary.pendingVerification || 0)}</div>
+            <div className="text-[11px] text-amber-200 font-medium">Waiting for your check</div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ duration: 0.2 }}
+            className="rounded-2xl border border-white/20 bg-slate-900/65 p-4 backdrop-blur-md text-white shadow-lg flex flex-col justify-between min-h-[105px] transition hover:bg-slate-900/80"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-200">Unpaid Orders</span>
+              <Receipt size={17} className="text-purple-400" />
+            </div>
+            <div className="mt-2 text-2xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">{summary.outstandingTransactions || 0}</div>
+            <div className="text-[11px] text-slate-300 font-medium">Orders with balance</div>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {message ? <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 font-medium">{message}</div> : null}
+      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 font-medium">{error}</div> : null}
+
+      {/* The Stripe panels are setup and diagnostics, not something an owner opens this page to
+          read. They were taking the top of the page, above the payment methods they actually
+          manage, so they now sit folded away until asked for. */}
+      <OwnerPanel
+        title="Card payments and connection"
+        description="Only needed if you take payments by card. Cash on delivery and bank transfer work without any of this."
+        action={
+          <button
+            type="button"
+            onClick={() => setShowGateway((open) => !open)}
+            aria-expanded={showGateway}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-bold text-ink transition hover:bg-surface"
+          >
+            {showGateway ? "Hide" : "Show"}
+            {showGateway ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        }
+      >
+        <AnimatePresence initial={false}>
+          {showGateway ? (
+            <motion.div
+              key="gateway"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: EASE }}
+              className="overflow-hidden"
+            >
+              <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-xl border border-line bg-surface p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <SectionTitle>Stripe Test Payment Status</SectionTitle>
-              <p className="mt-1 text-sm leading-6 text-muted">Use Stripe test cards for online payment demos. Local COD/manual methods still work independently.</p>
+              <SectionTitle>Card payment status</SectionTitle>
+              <p className="mt-1 text-sm leading-6 text-muted">Use test cards for demos. Local COD/manual methods still work independently.</p>
             </div>
             <span className={settings.stripeEnabled ? "w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700" : "w-fit rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600"}>
               {settings.stripeEnabled ? "Enabled" : "Disabled"}
@@ -291,14 +458,14 @@ export function PaymentsPage() {
             Test card: 4242 4242 4242 4242, any future expiry, any CVC. Webhook URL: /api/v1/payments/stripe/webhook.
           </div>
         </div>
-        <div className="rounded-xl border border-line bg-white p-5 shadow-card">
-          <SectionTitle>Recent Stripe Webhooks</SectionTitle>
+        <div className="rounded-xl border border-line bg-surface p-5">
+          <SectionTitle>Recent card events</SectionTitle>
           <div className="mt-4 space-y-2">
             {stripeWebhookEvents.map((event) => (
-              <div key={event.id} className="rounded-xl border border-line bg-surface p-3 text-sm">
+              <div key={event.id} className="rounded-xl border border-line bg-white p-3 text-sm">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <div className="font-semibold text-ink">{event.eventType || "Stripe event"}</div>
+                    <div className="font-semibold text-ink">{event.eventType || "Card event"}</div>
                     <div className="mt-1 text-xs text-muted">{event.eventId}</div>
                     {event.error ? <div className="mt-1 text-xs text-red-700">{event.error}</div> : null}
                   </div>
@@ -308,69 +475,154 @@ export function PaymentsPage() {
                 </div>
               </div>
             ))}
-            {!stripeWebhookEvents.length ? <div className="rounded-xl border border-dashed border-line bg-surface p-4 text-sm text-muted">No Stripe webhook events received yet.</div> : null}
+            {!stripeWebhookEvents.length ? <div className="rounded-xl border border-dashed border-line bg-white p-4 text-sm text-muted">No card events received yet.</div> : null}
           </div>
         </div>
-      </div>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </OwnerPanel>
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <form className="space-y-4 rounded-xl border border-line bg-white p-5 shadow-card" onSubmit={saveSettings}>
+        <form className="space-y-4 rounded-2xl border border-line bg-white p-5 shadow-sm" onSubmit={saveSettings}>
           <div>
-            <SectionTitle>Payment Settings</SectionTitle>
-            <p className="mt-1 text-sm text-muted">These settings are used by the order workflow and customer-facing payment instructions. COD/manual work without wallet numbers. JazzCash/EasyPaisa numbers are needed only when those wallet methods are enabled.</p>
-            <div className="mt-3 rounded-xl border border-brand-100 bg-brand-50 p-3 text-xs leading-5 text-brand-800">
-              Demo note: this phase records and verifies payments inside BizXusAI. It does not move real money unless you later connect real gateway credentials.
+            <SectionTitle>Payment Methods & Channels</SectionTitle>
+            <p className="mt-1 text-xs text-muted">Enable the payment methods you want your customers to see at checkout.</p>
+          </div>
+
+          {/* Methods Group */}
+          <div className="space-y-3">
+            {/* 1. COD */}
+            <div className="rounded-2xl border border-line p-3.5 bg-surface/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-brand">
+                    <Wallet size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-ink">Cash on Delivery (COD)</h4>
+                    <p className="text-[11px] text-muted">Customer pays rider in cash at delivery doorstep.</p>
+                  </div>
+                </div>
+                <Toggle
+                  label=""
+                  checked={settings.codEnabled}
+                  onChange={(val) => updateSetting("codEnabled", val)}
+                />
+              </div>
+            </div>
+
+            {/* 2. Bank Transfer */}
+            <div className={`rounded-2xl border transition-all ${settings.bankTransferEnabled ? "border-brand/40 bg-blue-50/20 p-3.5" : "border-line p-3.5 bg-surface/60"}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+                    <Building2 size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-ink">Bank Account Transfer</h4>
+                    <p className="text-[11px] text-muted">Direct transfer to your official business bank account.</p>
+                  </div>
+                </div>
+                <Toggle
+                  label=""
+                  checked={settings.bankTransferEnabled}
+                  onChange={(val) => updateSetting("bankTransferEnabled", val)}
+                />
+              </div>
+
+              {settings.bankTransferEnabled ? (
+                <div className="mt-3.5 pt-3 border-t border-line/60 grid gap-3 sm:grid-cols-2">
+                  <Field label="Bank Name">
+                    <input className="form-input" value={settings.bankName || ""} onChange={(e) => updateSetting("bankName", e.target.value)} placeholder="HBL, Meezan, UBL..." />
+                  </Field>
+                  <Field label="Account Title">
+                    <input className="form-input" value={settings.bankAccountTitle || ""} onChange={(e) => updateSetting("bankAccountTitle", e.target.value)} placeholder="Title on bank account" />
+                  </Field>
+                  <Field label="Account Number">
+                    <input className="form-input" value={settings.bankAccountNumber || ""} onChange={(e) => updateSetting("bankAccountNumber", e.target.value)} placeholder="0123456789" />
+                  </Field>
+                  <Field label="IBAN (Optional)">
+                    <input className="form-input" value={settings.bankIban || ""} onChange={(e) => updateSetting("bankIban", e.target.value)} placeholder="PK00XXXX0000..." />
+                  </Field>
+                </div>
+              ) : null}
+            </div>
+
+            {/* 3. JazzCash */}
+            <div className={`rounded-2xl border transition-all ${settings.jazzCashEnabled ? "border-brand/40 bg-blue-50/20 p-3.5" : "border-line p-3.5 bg-surface/60"}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-red-50 text-red-600 font-black text-xs">
+                    JC
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-ink">JazzCash Mobile Wallet</h4>
+                    <p className="text-[11px] text-muted">Customer transfers via JazzCash mobile app or till.</p>
+                  </div>
+                </div>
+                <Toggle
+                  label=""
+                  checked={settings.jazzCashEnabled}
+                  onChange={(val) => updateSetting("jazzCashEnabled", val)}
+                />
+              </div>
+
+              {settings.jazzCashEnabled ? (
+                <div className="mt-3.5 pt-3 border-t border-line/60 grid gap-3 sm:grid-cols-2">
+                  <Field label="JazzCash Mobile Number">
+                    <input className="form-input" value={settings.jazzCashNumber || ""} onChange={(e) => updateSetting("jazzCashNumber", e.target.value)} placeholder="03XXXXXXXXX" />
+                  </Field>
+                  <Field label="Account Title">
+                    <input className="form-input" value={settings.jazzCashAccountTitle || ""} onChange={(e) => updateSetting("jazzCashAccountTitle", e.target.value)} placeholder="Registered name" />
+                  </Field>
+                </div>
+              ) : null}
+            </div>
+
+            {/* 4. EasyPaisa */}
+            <div className={`rounded-2xl border transition-all ${settings.easyPaisaEnabled ? "border-brand/40 bg-blue-50/20 p-3.5" : "border-line p-3.5 bg-surface/60"}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600 font-black text-xs">
+                    EP
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-ink">EasyPaisa Mobile Wallet</h4>
+                    <p className="text-[11px] text-muted">Customer transfers via EasyPaisa mobile app.</p>
+                  </div>
+                </div>
+                <Toggle
+                  label=""
+                  checked={settings.easyPaisaEnabled}
+                  onChange={(val) => updateSetting("easyPaisaEnabled", val)}
+                />
+              </div>
+
+              {settings.easyPaisaEnabled ? (
+                <div className="mt-3.5 pt-3 border-t border-line/60 grid gap-3 sm:grid-cols-2">
+                  <Field label="EasyPaisa Mobile Number">
+                    <input className="form-input" value={settings.easyPaisaNumber || ""} onChange={(e) => updateSetting("easyPaisaNumber", e.target.value)} placeholder="03XXXXXXXXX" />
+                  </Field>
+                  <Field label="Account Title">
+                    <input className="form-input" value={settings.easyPaisaAccountTitle || ""} onChange={(e) => updateSetting("easyPaisaAccountTitle", e.target.value)} placeholder="Registered name" />
+                  </Field>
+                </div>
+              ) : null}
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Toggle label="COD" checked={settings.codEnabled} onChange={(value) => updateSetting("codEnabled", value)} />
-            <Toggle label="Manual verification" checked={settings.manualEnabled} onChange={(value) => updateSetting("manualEnabled", value)} />
-            <Toggle label="Bank transfer" checked={settings.bankTransferEnabled} onChange={(value) => updateSetting("bankTransferEnabled", value)} />
-            <Toggle label="JazzCash" checked={settings.jazzCashEnabled} onChange={(value) => updateSetting("jazzCashEnabled", value)} />
-            <Toggle label="EasyPaisa" checked={settings.easyPaisaEnabled} onChange={(value) => updateSetting("easyPaisaEnabled", value)} />
-            <Toggle label="Stripe test card" checked={settings.stripeEnabled} onChange={(value) => updateSetting("stripeEnabled", value)} />
-            <Toggle label="Demo mode" checked={settings.paymentsDemoMode} onChange={(value) => updateSetting("paymentsDemoMode", value)} />
-            <Toggle label="Owner approval required" checked={settings.requireOwnerApproval} onChange={(value) => updateSetting("requireOwnerApproval", value)} />
+
+          <div className="pt-3 border-t border-line grid gap-3 sm:grid-cols-2">
+            <Toggle label="Require my approval for payment proofs" checked={settings.requireOwnerApproval} onChange={(value) => updateSetting("requireOwnerApproval", value)} />
+            <Toggle label="Card payments (Stripe test)" checked={settings.stripeEnabled} onChange={(value) => updateSetting("stripeEnabled", value)} />
           </div>
-          <Field label="Default Method">
+
+          <Field label="Default Checkout Method">
             <select className="form-input" value={settings.defaultMethod || "cod"} onChange={(event) => updateSetting("defaultMethod", event.target.value)}>
               {methodOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {settings.jazzCashEnabled ? (
-              <Field label="JazzCash Number">
-                <input className="form-input" value={settings.jazzCashNumber || ""} onChange={(event) => updateSetting("jazzCashNumber", event.target.value)} placeholder="03XXXXXXXXX" />
-              </Field>
-            ) : null}
-            {settings.jazzCashEnabled ? (
-              <Field label="JazzCash Account Title">
-                <input className="form-input" value={settings.jazzCashAccountTitle || ""} onChange={(event) => updateSetting("jazzCashAccountTitle", event.target.value)} placeholder="Business owner name" />
-              </Field>
-            ) : null}
-            {settings.easyPaisaEnabled ? (
-              <Field label="EasyPaisa Number">
-                <input className="form-input" value={settings.easyPaisaNumber || ""} onChange={(event) => updateSetting("easyPaisaNumber", event.target.value)} placeholder="03XXXXXXXXX" />
-              </Field>
-            ) : null}
-            {settings.easyPaisaEnabled ? (
-              <Field label="EasyPaisa Account Title">
-                <input className="form-input" value={settings.easyPaisaAccountTitle || ""} onChange={(event) => updateSetting("easyPaisaAccountTitle", event.target.value)} placeholder="Business owner name" />
-              </Field>
-            ) : null}
-            <Field label="Bank Name">
-              <input className="form-input" value={settings.bankName || ""} onChange={(event) => updateSetting("bankName", event.target.value)} placeholder="HBL, Meezan, UBL..." />
-            </Field>
-            <Field label="Bank Account Title">
-              <input className="form-input" value={settings.bankAccountTitle || ""} onChange={(event) => updateSetting("bankAccountTitle", event.target.value)} placeholder="Only for bank/manual transfer" />
-            </Field>
-            <Field label="Bank Account Number">
-              <input className="form-input" value={settings.bankAccountNumber || ""} onChange={(event) => updateSetting("bankAccountNumber", event.target.value)} placeholder="Optional" />
-            </Field>
-            <Field label="IBAN">
-              <input className="form-input" value={settings.bankIban || ""} onChange={(event) => updateSetting("bankIban", event.target.value)} placeholder="Optional" />
-            </Field>
-          </div>
           <Field label="Customer Payment Instructions">
             <textarea className="form-input min-h-28" value={settings.customerInstructions || ""} onChange={(event) => updateSetting("customerInstructions", event.target.value)} />
           </Field>
@@ -383,82 +635,220 @@ export function PaymentsPage() {
           </button>
         </form>
 
-        <div className="space-y-4 rounded-xl border border-line bg-white p-5 shadow-card">
-          <div>
-            <SectionTitle>Outstanding Transactions</SectionTitle>
-            <p className="mt-1 text-sm text-muted">Approve customer-submitted proofs, or record COD/manual payments after checking them.</p>
+        <div className="space-y-4 rounded-2xl border border-line bg-white p-5 shadow-card">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <SectionTitle>Outstanding Transactions</SectionTitle>
+              <p className="mt-1 text-xs sm:text-sm text-muted">
+                Review proofs or record received payments to settle customer orders.
+              </p>
+            </div>
+            {outstanding.length > 0 && (
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 border border-amber-200">
+                {outstanding.length} Unpaid
+              </span>
+            )}
           </div>
+
           {isLoading ? <div className="text-sm text-muted">Loading payments...</div> : null}
+
           <div className="space-y-3">
-            {outstanding.map((transaction) => {
+            {visibleOutstanding.map((transaction) => {
               const draft = drafts[transaction.id] || {};
               const balance = transaction.paymentSummary?.balance ?? transaction.pricing?.total ?? 0;
+              const isExpanded = expandedTxId === transaction.id;
+              const hasProof = Boolean(transaction.paymentProofSummary?.hasProof);
+
               return (
-                <div key={transaction.id} className="rounded-xl border border-line bg-surface p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="font-semibold text-ink">{transaction.transactionNumber}</div>
-                      <div className="mt-1 text-xs text-muted">{transaction.customerSnapshot?.name || "Guest"} / {transaction.customerSnapshot?.phone || "No phone"}</div>
+                <div
+                  key={transaction.id}
+                  className={`rounded-2xl border transition-all ${
+                    isExpanded
+                      ? "border-brand/50 bg-blue-50/20 shadow-md p-4 sm:p-5"
+                      : "border-line bg-surface/70 hover:border-brand/30 p-4"
+                  }`}
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-extrabold text-ink">{transaction.transactionNumber}</span>
+                        <PaymentStatusBadge compact status={transaction.paymentStatus} />
+                        {hasProof && (
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200">
+                            Proof Attached
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted">
+                        {transaction.customerSnapshot?.name || "Guest"} • {transaction.customerSnapshot?.phone || "No phone"}
+                      </div>
                       {transaction.paymentPreference?.methodLabel ? (
-                        <div className="mt-2 w-fit rounded-full bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700">
+                        <div className="w-fit rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700">
                           Customer chose {transaction.paymentPreference.methodLabel}
                         </div>
                       ) : null}
-                      <div className="mt-2">
-                        <PaymentProofBadge summary={transaction.paymentProofSummary} />
-                      </div>
+                      {transaction.paymentProofSummary ? (
+                        <div className="mt-1">
+                          <PaymentProofBadge summary={transaction.paymentProofSummary} />
+                        </div>
+                      ) : null}
                     </div>
-                    <div className="text-sm">
-                      <div className="font-semibold text-ink">Balance: {formatMoney(balance)}</div>
-                      <div className="mt-2 flex justify-end">
-                        <PaymentStatusBadge compact status={transaction.paymentStatus} />
+
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2">
+                      <div className="text-right">
+                        <div className="text-[11px] font-medium text-subtle uppercase tracking-wider">Balance Due</div>
+                        <div className="text-base font-black text-ink">{formatMoney(balance)}</div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedTxId(isExpanded ? "" : transaction.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition shadow-sm ${
+                          isExpanded
+                            ? "bg-slate-200 text-slate-800 hover:bg-slate-300"
+                            : "bg-brand text-white hover:bg-brand-600"
+                        }`}
+                      >
+                        {isExpanded ? "Close Form" : "Record Payment"}
+                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
                     </div>
                   </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <Field label="Amount">
-                      <input className="form-input" type="number" min="1" value={draft.amount ?? balance} onChange={(event) => updateDraft(transaction.id, "amount", event.target.value)} />
-                    </Field>
-                    <Field label="Method">
-                      <select className="form-input" value={draft.method || settings.defaultMethod || "cod"} onChange={(event) => updateDraft(transaction.id, "method", event.target.value)}>
-                        {methodOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
-                    </Field>
-                    <Field label="Record Status">
-                      <select className="form-input" value={draft.status || "paid"} onChange={(event) => updateDraft(transaction.id, "status", event.target.value)}>
-                        <option value="paid">Paid / verified</option>
-                        <option value="pending_verification">Pending verification</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </Field>
-                    <Field label="Reference Number">
-                      <input className="form-input" value={draft.referenceNumber || ""} onChange={(event) => updateDraft(transaction.id, "referenceNumber", event.target.value)} />
-                    </Field>
-                    <div className="md:col-span-2">
-                      <Field label="Notes">
-                        <textarea className="form-input min-h-20" value={draft.notes || ""} onChange={(event) => updateDraft(transaction.id, "notes", event.target.value)} />
-                      </Field>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="mt-3 rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                    disabled={savingPaymentId === transaction.id}
-                    onClick={() => submitPayment(transaction.id)}
-                  >
-                    {savingPaymentId === transaction.id ? "Recording..." : "Record Payment"}
-                  </button>
+
+                  {/* Progressive Disclosure: Collapsible Payment Form */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 pt-4 border-t border-line/80">
+                          <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted">
+                            Enter Received Payment Details
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <Field label="Amount Received">
+                              <input
+                                className="form-input"
+                                type="number"
+                                min="1"
+                                value={draft.amount ?? balance}
+                                onChange={(event) => updateDraft(transaction.id, "amount", event.target.value)}
+                              />
+                            </Field>
+                            <Field label="Payment Method">
+                              <select
+                                className="form-input"
+                                value={draft.method || settings.defaultMethod || "cod"}
+                                onChange={(event) => updateDraft(transaction.id, "method", event.target.value)}
+                              >
+                                {methodOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </Field>
+                            <Field label="Record Status">
+                              <select
+                                className="form-input"
+                                value={draft.status || "paid"}
+                                onChange={(event) => updateDraft(transaction.id, "status", event.target.value)}
+                              >
+                                <option value="paid">Paid / verified</option>
+                                <option value="pending_verification">Pending verification</option>
+                                <option value="rejected">Rejected</option>
+                              </select>
+                            </Field>
+                            <Field label="Reference Number">
+                              <input
+                                className="form-input"
+                                placeholder="Bank auth code / TRX ID"
+                                value={draft.referenceNumber || ""}
+                                onChange={(event) => updateDraft(transaction.id, "referenceNumber", event.target.value)}
+                              />
+                            </Field>
+                            <div className="sm:col-span-2">
+                              <Field label="Notes (Optional)">
+                                <textarea
+                                  className="form-input min-h-16"
+                                  placeholder="Cashier notes or transaction remarks..."
+                                  value={draft.notes || ""}
+                                  onChange={(event) => updateDraft(transaction.id, "notes", event.target.value)}
+                                />
+                              </Field>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              className="rounded-xl bg-ink px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800 disabled:opacity-60 transition"
+                              disabled={savingPaymentId === transaction.id}
+                              onClick={() => submitPayment(transaction.id)}
+                            >
+                              {savingPaymentId === transaction.id ? "Recording..." : "Save & Mark as Paid"}
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-xl border border-line bg-white px-4 py-2.5 text-xs font-bold text-muted hover:text-ink transition"
+                              onClick={() => setExpandedTxId("")}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
-            {!outstanding.length && !isLoading ? <div className="rounded-xl border border-dashed border-line p-4 text-sm text-muted">No outstanding payment transactions.</div> : null}
+
+            {!outstanding.length && !isLoading ? (
+              <div className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted bg-surface/40">
+                🎉 All orders are fully paid! No outstanding transactions.
+              </div>
+            ) : null}
+
+            {outstanding.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllOutstanding((curr) => !curr)}
+                className="w-full rounded-xl border border-dashed border-line bg-surface/60 py-3 text-center text-xs font-bold text-brand hover:bg-blue-50/50 hover:border-brand/40 transition flex items-center justify-center gap-1.5"
+              >
+                {showAllOutstanding ? (
+                  <>
+                    <span>Show Fewer Orders (Show top 3)</span>
+                    <ChevronUp size={14} />
+                  </>
+                ) : (
+                  <>
+                    <span>Show All Unpaid Orders ({outstanding.length - 3} more)</span>
+                    <ChevronDown size={14} />
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-line bg-white p-5 shadow-card">
-        <SectionTitle>Recent Payment Records</SectionTitle>
-        <div className="mt-4 overflow-x-auto">
+      <div className="rounded-2xl border border-line bg-white p-5 shadow-card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <SectionTitle>Recent Payment Records</SectionTitle>
+            <p className="mt-1 text-xs sm:text-sm text-muted">Complete audit trail of all received cash, online proofs, and refunds.</p>
+          </div>
+          {records.length > 0 && (
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 border border-slate-200">
+              {records.length} Total Records
+            </span>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-line text-sm">
             <thead className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.12em] text-subtle">
               <tr>
@@ -473,7 +863,7 @@ export function PaymentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {records.map((record) => {
+              {visibleRecords.map((record) => {
                 const refundDraft = refundDrafts[record.transactionId] || {};
                 const isPendingStripe = record.recordType === "payment" && record.provider === "stripe" && record.status === "pending_verification";
                 return (
@@ -569,13 +959,29 @@ export function PaymentsPage() {
             </tbody>
           </table>
         </div>
-      </div>
-    </section>
-  );
-}
 
-function StatCard({ label, value }) {
-  return <KitStatCard label={label} value={value} />;
+        {records.length > 5 && (
+          <button
+            type="button"
+            onClick={() => setShowAllRecords((curr) => !curr)}
+            className="w-full rounded-xl border border-dashed border-line bg-surface/60 py-2.5 text-center text-xs font-bold text-brand hover:bg-blue-50/50 hover:border-brand/40 transition flex items-center justify-center gap-1.5"
+          >
+            {showAllRecords ? (
+              <>
+                <span>Show Fewer Records (Show latest 5)</span>
+                <ChevronUp size={14} />
+              </>
+            ) : (
+              <>
+                <span>Show All Payment Records ({records.length - 5} more)</span>
+                <ChevronDown size={14} />
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </motion.section>
+  );
 }
 
 function Field({ label, children }) {
@@ -589,9 +995,20 @@ function Field({ label, children }) {
 
 function Toggle({ label, checked, onChange }) {
   return (
-    <label className="flex items-center justify-between rounded-xl border border-line px-3 py-2 text-sm text-ink">
-      <span>{label}</span>
-      <input type="checkbox" checked={Boolean(checked)} onChange={(event) => onChange(event.target.checked)} />
+    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-line px-3 py-2.5 text-sm text-ink hover:bg-surface">
+      <span className="font-medium">{label}</span>
+      <span
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+          checked ? 'bg-brand' : 'bg-slate-200'
+        }`}
+      >
+        <span
+          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+            checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
+          }`}
+        />
+        <input type="checkbox" className="sr-only" checked={Boolean(checked)} onChange={(e) => onChange(e.target.checked)} />
+      </span>
     </label>
   );
 }
